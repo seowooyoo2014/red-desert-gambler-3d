@@ -1,0 +1,3203 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<title>붉은 사막의 도박꾼 3D</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#120605;color:#ffe6b0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+#stage{position:fixed;inset:0 0 174px 0;background:#180706}
+body.title-mode #stage{inset:0}
+#game3d{width:100%;height:100%;display:block}
+#hud{position:absolute;left:14px;top:12px;right:14px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;pointer-events:none}
+body.title-mode #hud,body.title-mode #message,body.title-mode #ui{opacity:0;pointer-events:none}
+.hudBox{min-width:190px;padding:10px 12px;border:1px solid rgba(255,214,128,.55);background:rgba(28,9,5,.64);box-shadow:0 8px 24px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,235,170,.12);backdrop-filter:blur(6px);border-radius:8px}
+.hudTitle{font-size:13px;color:#ffd990;font-weight:800;margin-bottom:4px}
+.hudMain{font-size:18px;font-weight:900;color:#fff1c4;line-height:1.25}
+.hudSub{font-size:12px;color:#e9c58c;line-height:1.35;margin-top:5px}
+#message{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);width:min(760px,calc(100vw - 28px));padding:10px 14px;text-align:center;border:1px solid rgba(255,214,128,.52);background:rgba(30,10,6,.72);color:#fff3c7;border-radius:8px;font-weight:900;line-height:1.35;box-shadow:0 10px 26px rgba(0,0,0,.28)}
+#ui{position:fixed;left:0;right:0;bottom:0;height:174px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:7px;background:radial-gradient(circle at 12% 18%,rgba(255,205,120,.20),transparent 22%),radial-gradient(circle at 85% 12%,rgba(255,130,90,.14),transparent 20%),linear-gradient(180deg,#30140d 0%,#230d08 45%,#180706 100%);border-top:3px solid #b86a32;box-shadow:inset 0 10px 26px rgba(255,190,90,.08),inset 0 -10px 26px rgba(0,0,0,.26)}
+button,select{position:relative;overflow:hidden;border:2px solid rgba(255,211,127,.72);border-radius:12px;color:#fff0c5;font-weight:900;font-size:13px;text-shadow:0 1px 0 rgba(0,0,0,.45);background:linear-gradient(180deg,rgba(255,240,188,.14),rgba(255,255,255,0) 34%),linear-gradient(180deg,#965226 0%,#703116 48%,#4b190b 100%);box-shadow:inset 0 1px 0 rgba(255,245,200,.35),inset 0 -8px 14px rgba(0,0,0,.22),0 4px 10px rgba(0,0,0,.24);transition:transform .12s ease,filter .12s ease}
+button:hover,select:hover{filter:brightness(1.08)}
+button:active{transform:translateY(2px) scale(.99)}
+button:disabled{opacity:.45;filter:grayscale(.35)}
+.small{font-size:10px;color:#ffe4aa;opacity:.92}
+#sceneBtn{background:linear-gradient(180deg,rgba(220,255,255,.12),rgba(255,255,255,0) 34%),linear-gradient(180deg,#28636f 0%,#1d4d58 46%,#12333b 100%)}
+#cheatBtn{background:linear-gradient(180deg,rgba(255,235,220,.14),rgba(255,255,255,0) 34%),linear-gradient(180deg,#804066 0%,#61264f 46%,#3b102e 100%)}
+#suspectBtn{background:linear-gradient(180deg,rgba(255,245,200,.14),rgba(255,255,255,0) 34%),linear-gradient(180deg,#8b5a25 0%,#6b3c16 46%,#44210d 100%)}
+#bookBtn{background:linear-gradient(180deg,rgba(255,245,210,.16),rgba(255,255,255,0) 34%),linear-gradient(180deg,#4c6d8d 0%,#355572 46%,#1c3247 100%)}
+.overlay{position:fixed;inset:0 0 174px 0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.68);z-index:5;padding:24px}
+.overlay.visible{display:flex}
+.panel{width:min(860px,96vw);max-height:calc(100vh - 220px);overflow:auto;border:2px solid #d99a45;background:linear-gradient(180deg,#35150e,#190706);border-radius:10px;padding:20px;box-shadow:0 22px 70px rgba(0,0,0,.52)}
+.panel h2{margin:0 0 12px;color:#ffe6b0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.item{border:1px solid rgba(255,211,127,.48);background:rgba(82,30,14,.65);padding:10px;border-radius:8px}
+.item b{color:#fff1c4}
+.item p{margin:6px 0 10px;color:#e9c58c;font-size:13px;line-height:1.35}
+.closeRow{display:flex;justify-content:flex-end;margin-top:14px}
+#loadError{position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:24px;text-align:center;background:#140604;color:#ffe6b0;line-height:1.55}
+#titleOverlay{position:fixed;inset:0;z-index:10;display:flex;align-items:stretch;background:#050303;color:#f4f0df;overflow:hidden}
+#titleStill{position:absolute;inset:0;background:radial-gradient(circle at 70% 62%,rgba(204,82,33,.34),transparent 24%),linear-gradient(90deg,rgba(0,0,0,.88),rgba(0,0,0,.35) 48%,rgba(0,0,0,.66)),linear-gradient(140deg,#170706,#4b190b 42%,#0b0504);background-size:cover;background-position:center;filter:saturate(.95) contrast(1.08)}
+#titleOverlay::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.5),transparent 34%),repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px);mix-blend-mode:screen;opacity:.32;pointer-events:none}
+.titlePanel{position:relative;z-index:1;width:min(560px,92vw);padding:clamp(24px,5vw,58px);display:flex;flex-direction:column;justify-content:center;gap:20px;text-shadow:0 2px 16px rgba(0,0,0,.9)}
+.chapterKicker{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:clamp(18px,3vw,36px);font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:#fff}
+.titlePanel h1{margin:0;font-size:clamp(34px,7vw,76px);line-height:.95;color:#fff8df;letter-spacing:0;text-wrap:balance}
+.titleCopy{max-width:420px;color:#d9d0bd;font-size:14px;line-height:1.65}
+.titleMenu{display:grid;gap:10px;width:min(320px,86vw);margin-top:8px}
+.titleMenu button,.settingsPanel button{height:46px;text-align:left;padding:0 16px;border-radius:4px;border:0;background:transparent;color:#fff;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:18px;box-shadow:none;text-shadow:0 0 12px rgba(0,0,0,.8)}
+.titleMenu button:hover,.settingsPanel button:hover{background:rgba(255,255,255,.12);filter:none}
+.titleMenu button:disabled{opacity:.34;background:transparent}
+.titleFooter{position:absolute;left:clamp(24px,5vw,58px);right:clamp(24px,5vw,58px);bottom:24px;z-index:2;display:flex;justify-content:space-between;gap:20px;color:#fff;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:16px;text-shadow:0 2px 10px rgba(0,0,0,.9)}
+#settingsOverlay{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.72);padding:22px}
+#settingsOverlay.visible{display:flex}
+.settingsPanel{width:min(620px,94vw);border:1px solid rgba(255,214,128,.55);background:linear-gradient(180deg,rgba(36,13,8,.96),rgba(12,5,4,.98));padding:22px;border-radius:8px;box-shadow:0 24px 80px rgba(0,0,0,.65)}
+.settingsPanel h2{margin:0 0 16px;color:#fff1c4}
+.settingRow{display:grid;grid-template-columns:150px 1fr auto;align-items:center;gap:12px;margin:12px 0;color:#ffe6b0}
+.settingRow input[type=range]{width:100%}
+.settingRow select{height:38px}
+.settingsActions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.settingsActions button{text-align:center;border:1px solid rgba(255,214,128,.55);background:rgba(122,47,23,.55)}
+#gameOverOverlay{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:#000;color:#fff;opacity:0;pointer-events:none;transition:opacity 1.05s ease}
+#gameOverOverlay.visible{opacity:1;pointer-events:auto}
+.gameOverPanel{text-align:center;padding:24px;width:min(680px,92vw);transform:translateY(14px);transition:transform 1.05s ease}
+#gameOverOverlay.visible .gameOverPanel{transform:translateY(0)}
+.gameOverTitle{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:clamp(48px,12vw,116px);font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#f5f5f5;text-shadow:0 0 22px rgba(140,0,0,.9),0 0 54px rgba(255,40,20,.38);margin-bottom:14px}
+.gameOverReason{font-size:clamp(15px,2.8vw,22px);color:#d7c5b7;line-height:1.5;margin-bottom:24px}
+.gameOverActions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+.gameOverActions button{width:170px;height:46px;border-radius:4px;background:rgba(80,10,8,.72);border:1px solid rgba(255,255,255,.24);box-shadow:none}
+#storyOverlay{position:fixed;inset:0 0 174px 0;z-index:18;display:none;align-items:flex-end;justify-content:center;padding:22px;background:linear-gradient(180deg,transparent 20%,rgba(0,0,0,.68) 100%);pointer-events:none}
+#storyOverlay.visible{display:flex;pointer-events:auto}
+.storyPanel{width:min(820px,calc(100vw - 28px));border:1px solid rgba(255,214,128,.68);border-radius:8px;background:rgba(18,7,5,.92);box-shadow:0 18px 60px rgba(0,0,0,.56),inset 0 1px 0 rgba(255,231,172,.12);padding:16px;color:#ffe6b0}
+.storyTitle{font-weight:900;color:#fff1c4;margin-bottom:8px}
+.storyText{margin:0 0 12px;line-height:1.55;color:#e8d2a6}
+.storyActions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.storyActions button{height:42px;border-radius:4px;padding:0 14px;text-align:center}
+#cutsceneOverlay{position:fixed;inset:0;z-index:26;display:none;color:#fff;pointer-events:none;background:rgba(0,0,0,0);transition:background .55s ease}
+#cutsceneOverlay.visible{display:block;pointer-events:auto}
+#cutsceneOverlay.fade{background:rgba(0,0,0,.72)}
+.cutscenePanel{position:absolute;left:50%;bottom:calc(174px + 22px);transform:translateX(-50%);width:min(880px,calc(100vw - 28px));border:1px solid rgba(255,214,128,.68);border-radius:8px;background:rgba(13,6,5,.9);box-shadow:0 18px 70px rgba(0,0,0,.58),inset 0 1px 0 rgba(255,231,172,.1);padding:16px;text-shadow:0 2px 14px rgba(0,0,0,.85)}
+.cutsceneTitle{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;font-weight:900;color:#ffd990;margin-bottom:8px;text-transform:uppercase}
+.cutsceneText{font-size:17px;line-height:1.55;color:#fff1c4;margin:0 0 12px}
+#cutsceneVideo{display:none;width:100%;max-height:44vh;object-fit:cover;border-radius:6px;margin-bottom:12px;background:#050302}
+.cutsceneHint{font-size:12px;color:#cdb590;text-align:right}
+.cutsceneChoices{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.cutsceneChoices button{height:42px;border-radius:4px;padding:0 14px;text-align:center}
+#epilogueOverlay{position:fixed;inset:0;z-index:31;display:none;align-items:center;justify-content:center;background:linear-gradient(180deg,#060303,#170806 55%,#030202);color:#fff;padding:24px}
+#epilogueOverlay.visible{display:flex}
+.epiloguePanel{width:min(780px,94vw);text-align:center;border:1px solid rgba(255,214,128,.48);border-radius:8px;padding:28px;background:rgba(25,9,6,.78);box-shadow:0 28px 90px rgba(0,0,0,.72)}
+.epilogueKicker{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#ffd990;font-weight:900;margin-bottom:10px}
+.epilogueTitle{font-size:clamp(30px,6vw,64px);font-weight:900;color:#fff1c4;margin-bottom:14px}
+.epilogueText{line-height:1.65;color:#e8d2a6;margin:0 auto 20px;max-width:620px}
+.epiloguePanel button{height:46px;border-radius:4px;padding:0 18px;text-align:center}
+#mapOverlay{position:fixed;inset:0 0 174px 0;z-index:19;display:none;align-items:center;justify-content:center;padding:24px;background:radial-gradient(circle at 50% 45%,rgba(120,58,25,.28),transparent 36%),rgba(3,2,2,.76);color:#ffe6b0}
+#mapOverlay.visible{display:flex}
+.mapPanel{width:min(920px,96vw);border:1px solid rgba(255,214,128,.62);border-radius:8px;background:rgba(20,8,5,.94);box-shadow:0 28px 90px rgba(0,0,0,.64),inset 0 1px 0 rgba(255,231,172,.12);padding:20px}
+.mapHeader{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px;border-bottom:1px solid rgba(255,214,128,.22);padding-bottom:12px}
+.mapTitle{font-size:24px;font-weight:900;color:#fff1c4}
+.mapSub{font-size:12px;color:#d7b985;text-align:right;line-height:1.4}
+.mapNodes{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+.mapNode{border:1px solid rgba(255,214,128,.42);border-radius:8px;background:rgba(58,22,12,.72);padding:12px;min-height:152px;display:flex;flex-direction:column;gap:8px}
+.mapNode.completed{opacity:.58;filter:saturate(.7)}
+.mapNode.locked{opacity:.36;filter:grayscale(.4)}
+.mapNode b{color:#fff1c4}
+.mapNode p{margin:0;color:#e0c493;font-size:13px;line-height:1.42}
+.mapNodeMeta{font-size:11px;color:#ffcf88}
+.mapNode button{height:38px;border-radius:4px;margin-top:auto;text-align:center}
+@media (max-width:720px){
+  #stage{inset:0 0 148px 0}
+  #ui{height:148px}
+  #hud{left:8px;right:8px;gap:8px}
+  .hudBox{min-width:0;flex:1;padding:8px}
+  .hudMain{font-size:15px}
+  .hudSub{font-size:11px}
+  #message{font-size:13px}
+  button,select{font-size:12px;border-radius:10px}
+  .titlePanel{justify-content:flex-start;padding-top:70px}
+  .titleFooter{font-size:12px;bottom:14px}
+  .settingRow{grid-template-columns:1fr;gap:6px}
+  .gameOverActions button{width:140px}
+  #storyOverlay{inset:0 0 148px 0;padding:12px}
+  .cutscenePanel{bottom:calc(148px + 12px);padding:13px}
+  .cutsceneText{font-size:14px}
+  #mapOverlay{inset:0 0 148px 0;padding:12px}
+  .mapHeader{display:block}
+  .mapSub{text-align:left;margin-top:8px}
+}
+</style>
+</head>
+<body class="title-mode">
+<div id="titleOverlay">
+  <div id="titleStill"></div>
+  <section class="titlePanel" aria-label="시작 메뉴">
+    <div class="chapterKicker">CHAPTER 1</div>
+    <h1>붉은 사막의<br>도박꾼</h1>
+    <p class="titleCopy">붉은 사막을 건너 빚 문서를 회수하세요. 오아시스의 소문, 상점의 단서, 폐쇄된 도박방의 결투가 한 줄의 여정으로 이어집니다.</p>
+    <p class="titleCopy" id="titleQuest">현재 목표: 빚 문서의 첫 단서를 찾아라.</p>
+    <nav class="titleMenu">
+      <button id="titleNewBtn">새 게임</button>
+      <button id="titleLoadBtn">불러오기</button>
+      <button id="titleSettingsBtn">설정</button>
+    </nav>
+  </section>
+  <div class="titleFooter">
+    <span>ENTER 선택</span>
+    <span>MAIN MENU</span>
+  </div>
+</div>
+<div id="settingsOverlay" aria-label="설정">
+  <div class="settingsPanel">
+    <h2>설정</h2>
+    <div class="settingRow">
+      <label for="volumeRange">음량</label>
+      <input id="volumeRange" type="range" min="0" max="100" value="70" />
+      <span id="volumeLabel">70%</span>
+    </div>
+    <div class="settingRow">
+      <label for="sfxToggle">효과음</label>
+      <select id="sfxToggle"><option value="on">켬</option><option value="off">끔</option></select>
+      <span>주사위, 코인, 망치</span>
+    </div>
+    <div class="settingRow">
+      <label for="qualitySelect">화질</label>
+      <select id="qualitySelect"><option value="high">고화질</option><option value="balanced" selected>균형</option><option value="low">저사양</option></select>
+      <span>그림자와 해상도</span>
+    </div>
+    <div class="settingRow">
+      <label for="gambleBrightnessRange">도박장 밝기</label>
+      <input id="gambleBrightnessRange" type="range" min="45" max="130" value="80" />
+      <span id="gambleBrightnessLabel">80%</span>
+    </div>
+    <div class="settingRow">
+      <label for="fishBrightnessRange">낚시 밝기</label>
+      <input id="fishBrightnessRange" type="range" min="80" max="180" value="145" />
+      <span id="fishBrightnessLabel">145%</span>
+    </div>
+    <div class="settingRow">
+      <label for="lampFlickerToggle">전등 깜빡임</label>
+      <select id="lampFlickerToggle"><option value="on">켬</option><option value="off">끔</option></select>
+      <span>도박장 천장 전등</span>
+    </div>
+    <div class="settingRow">
+      <label for="windowSelect">창 모드</label>
+      <select id="windowSelect"><option value="browser" selected>브라우저 창</option><option value="fullscreen">전체 화면</option></select>
+      <span>요청 시 전환</span>
+    </div>
+    <div class="settingRow">
+      <label>언어</label>
+      <strong>한국어</strong>
+      <span>고정</span>
+    </div>
+    <div class="settingRow">
+      <label>조작 안내</label>
+      <span>SPACE 실행 · C 의심 · X 속임수 · [ ] 배팅 · R 재시작</span>
+      <span></span>
+    </div>
+    <div class="settingsActions">
+      <button id="settingsCloseBtn">닫기</button>
+    </div>
+  </div>
+</div>
+<div id="gameOverOverlay" aria-label="게임 오버">
+  <div class="gameOverPanel">
+    <div class="gameOverTitle">Game Over</div>
+    <div id="gameOverReason" class="gameOverReason">NPC 승리</div>
+    <div class="gameOverActions">
+      <button id="gameOverRetryBtn">다시 시작</button>
+      <button id="gameOverMenuBtn">메인 메뉴</button>
+    </div>
+  </div>
+</div>
+<div id="storyOverlay" aria-label="이야기">
+  <div class="storyPanel">
+    <div id="storyTitle" class="storyTitle">붉은 사막의 도박꾼</div>
+    <p id="storyText" class="storyText"></p>
+    <div id="storyActions" class="storyActions"></div>
+  </div>
+</div>
+<div id="cutsceneOverlay" aria-label="컷신">
+  <div class="cutscenePanel">
+    <div id="cutsceneTitle" class="cutsceneTitle">붉은 사막</div>
+    <video id="cutsceneVideo" muted playsinline></video>
+    <p id="cutsceneText" class="cutsceneText"></p>
+    <div id="cutsceneChoices" class="cutsceneChoices"></div>
+    <div id="cutsceneHint" class="cutsceneHint">Enter / Space / 클릭</div>
+  </div>
+</div>
+<div id="epilogueOverlay" aria-label="에필로그">
+  <div class="epiloguePanel">
+    <div class="epilogueKicker">EPILOGUE</div>
+    <div id="epilogueTitle" class="epilogueTitle">1장의 끝</div>
+    <p id="epilogueText" class="epilogueText"></p>
+    <button id="epilogueContinueBtn">다음 여정으로</button>
+  </div>
+</div>
+<div id="mapOverlay" aria-label="여정 지도">
+  <div class="mapPanel">
+    <div class="mapHeader">
+      <div>
+        <div class="mapTitle">붉은 사막 여정</div>
+        <div class="mapNodeMeta">승리하면 다음 노드가 열립니다.</div>
+      </div>
+      <div id="mapStatus" class="mapSub">현재 위치: 시작 전</div>
+    </div>
+    <div id="mapNodes" class="mapNodes"></div>
+  </div>
+</div>
+<div id="stage">
+  <canvas id="game3d"></canvas>
+  <div id="loadError"></div>
+  <div id="hud">
+    <div class="hudBox">
+      <div class="hudTitle" id="chapterLabel">1장 붉은 사막 도박장</div>
+      <div class="hudMain" id="scoreLabel">소지금 100G</div>
+      <div class="hudSub" id="roundLabel">라운드 1 · 배팅 10G</div>
+    </div>
+    <div class="hudBox" style="text-align:right">
+      <div class="hudTitle" id="sceneLabel">도박</div>
+      <div class="hudMain" id="rivalLabel">모래눈 잭</div>
+      <div class="hudSub" id="diceLabel">주사위 1+1 : 1+1</div>
+    </div>
+  </div>
+  <div id="message">3D 무대를 준비하고 있습니다.</div>
+</div>
+<div id="shopOverlay" class="overlay"><div class="panel"><h2>아이템 상점</h2><div id="shopGrid" class="grid"></div><div class="closeRow"><button id="closeShop">닫기</button></div></div></div>
+<div id="bookOverlay" class="overlay"><div class="panel"><h2 id="bookTitle">물고기 도감</h2><div id="bookGrid" class="grid"></div><div class="closeRow"><button id="closeBook">닫기</button></div></div></div>
+<div id="helpOverlay" class="overlay"><div class="panel"><h2>붉은 사막의 도박꾼 3D</h2><p>원작의 도박 규칙을 3D 무대와 분리된 시뮬레이션 구조로 옮긴 버전입니다.</p><p>SPACE 실행, C 의심, X 내 속임수, [ ] 배팅, R 재시작을 사용합니다.</p><div class="closeRow"><button id="closeHelp">닫기</button></div></div></div>
+<div id="ui">
+  <button id="actBtn">실행<br><span class="small">SPACE</span></button>
+  <button id="suspectBtn">의심<br><span class="small">C</span></button>
+  <button id="cheatBtn">내 속임수<br><span class="small">X</span></button>
+  <button id="sceneBtn">낚시/도박<br><span class="small">← →</span></button>
+  <button id="shopBtn">상점<br><span class="small">I</span></button>
+  <button id="bookBtn">물고기 도감<br><span class="small">F</span></button>
+  <button id="restartBtn">다시 시작<br><span class="small">R</span></button>
+  <button id="muteBtn">음소거<br><span class="small">M</span></button>
+  <button id="betDownBtn">배팅 -<br><span class="small">[</span></button>
+  <button id="betUpBtn">배팅 +<br><span class="small">]</span></button>
+  <select id="difficulty">
+    <option value="easy">쉬움</option>
+    <option value="normal" selected>보통</option>
+    <option value="hard">어려움</option>
+    <option value="hell">악몽</option>
+  </select>
+  <select id="music">
+    <option value="none">음악 없음</option>
+    <option value="desert">붉은 사막</option>
+    <option value="oasis">오아시스</option>
+    <option value="boss">결투의 밤</option>
+  </select>
+</div>
+<script type="module">
+"use strict";
+
+let THREE, GLTFLoader;
+try {
+  THREE = await import("https://unpkg.com/three@0.165.0/build/three.module.js");
+  try {
+    ({GLTFLoader} = await import("https://unpkg.com/three@0.165.0/examples/jsm/loaders/GLTFLoader.js"));
+  } catch {}
+} catch (err) {
+  const box = document.getElementById("loadError");
+  box.style.display = "flex";
+  box.innerHTML = "Three.js 모듈을 불러오지 못했습니다.<br>인터넷 연결이 가능한 상태에서 다시 열면 3D 버전이 실행됩니다.";
+  throw err;
+}
+
+const $ = id => document.getElementById(id);
+const canvas = $("game3d");
+const SAVE_KEY = "red_desert_gambler_3d_save_v1";
+const SETTINGS_KEY = "red_desert_gambler_3d_settings_v1";
+
+const chapters = [
+  {name:"1장 붉은 사막 도박장", place:"붉은 사막 도박장", music:"desert", bg:["#2b0707","#66220f","#140604"], water:"#12384a", bank:"#6b3819", accent:"#d99a45", fish:["작은 모래붕어","붉은 지느러미","사막 송어","은빛 모래고기","사막 복어","노을 장어","황금 비늘어"], rivals:[
+    {name:"모래눈 잭",cheat:.25,detect:.25,tint:"#8a4a29",accent:"#d6a05f",headgear:"bandana",build:"lean"},
+    {name:"붉은 장갑 루나",cheat:.35,detect:.38,tint:"#7e1f3d",accent:"#f0b2be",headgear:"veil",build:"slim"}
+  ]},
+  {name:"2장 달빛 오아시스", place:"달빛 오아시스", music:"oasis", bg:["#07142b","#16466b","#06141f"], water:"#1d6f86", bank:"#4c6230", accent:"#8fe7f0", fish:["은빛 모래고기","사막 복어","황금 비늘어","푸른 수정어","유령 물고기","시간을 먹는 물고기"], rivals:[
+    {name:"오아시스 마술사 미라",cheat:.38,detect:.46,tint:"#1f6770",accent:"#8fe7f0",headgear:"turban",build:"slim"},
+    {name:"달빛 카드상인 솔",cheat:.45,detect:.52,tint:"#4c5ca0",accent:"#dfe7ff",headgear:"hood",build:"medium"}
+  ]},
+  {name:"3장 검은 협곡 카지노", place:"검은 협곡 카지노", music:"boss", bg:["#0b0b0f","#2d1c35","#08080c"], water:"#1b263b", bank:"#3a2a24", accent:"#b9a37f", fish:["노을 장어","돌가시 물고기","황금 메기","붉은 번개어","검은 가시고기","사막의 고대어"], rivals:[
+    {name:"검은 주사위 노인",cheat:.5,detect:.58,tint:"#35313f",accent:"#b9a37f",headgear:"cap",build:"broad"},
+    {name:"협곡의 쌍둥이 사기꾼",cheat:.58,detect:.66,tint:"#51232d",accent:"#ffb3b3",headgear:"hood",build:"large"}
+  ]},
+  {name:"4장 황금 왕궁", place:"황금 왕궁", music:"boss", bg:["#2b1b04","#8a5a12","#120b02"], water:"#375a7f", bank:"#8b6f2a", accent:"#ffd966", fish:["황금 비늘어","황금 메기","전설의 금빛 잉어","사막의 고대어","시간을 먹는 물고기","붉은 사막 용어"], rivals:[
+    {name:"사막왕 카르둔",cheat:.62,detect:.72,tint:"#3b2e16",accent:"#f1cc65",headgear:"crown",build:"large"},
+    {name:"황금 가면 여왕",cheat:.68,detect:.78,tint:"#6b1f35",accent:"#ffd966",headgear:"crown",build:"medium"}
+  ]},
+  {name:"5장 하늘섬 카지노", place:"하늘섬 카지노", music:"sky", bg:["#10204a","#4b7dc8","#071027"], water:"#5aa7d6", bank:"#6f6a44", accent:"#d7efff", fish:["푸른 수정어","유령 물고기","전설의 금빛 잉어","시간을 먹는 물고기","붉은 사막 용어"], rivals:[
+    {name:"하늘섬 도박사 제피르",cheat:.72,detect:.82,tint:"#2c5ea4",accent:"#d7efff",headgear:"feather",build:"lean"},
+    {name:"구름왕 아르곤",cheat:.78,detect:.88,tint:"#4e4f88",accent:"#eff6ff",headgear:"halo",build:"broad"}
+  ]}
+];
+
+const fishTypes = [
+  {name:"작은 모래붕어",gold:8,color:"#d9b56f",accent:"#8d6e3d",weight:50,shape:"round",size:.72},
+  {name:"붉은 지느러미",gold:15,color:"#e05a3a",accent:"#ffd180",weight:40,shape:"slim",size:.82},
+  {name:"사막 송어",gold:18,color:"#c98a5a",accent:"#5d4037",weight:38,shape:"long",size:.9},
+  {name:"은빛 모래고기",gold:20,color:"#cfd8dc",accent:"#78909c",weight:35,shape:"slim",size:.86},
+  {name:"사막 복어",gold:25,color:"#9bd18f",accent:"#558b2f",weight:28,shape:"puffer",size:.92},
+  {name:"노을 장어",gold:32,color:"#b85c38",accent:"#ffab40",weight:24,shape:"eel",size:1.05},
+  {name:"황금 비늘어",gold:35,color:"#ffd54f",accent:"#ff8f00",weight:22,shape:"round",size:1},
+  {name:"돌가시 물고기",gold:40,color:"#6d4c41",accent:"#bcaaa4",weight:20,shape:"spiky",size:1},
+  {name:"황금 메기",gold:55,color:"#ffd34f",accent:"#6d4c41",weight:12,shape:"catfish",size:1.12},
+  {name:"푸른 수정어",gold:65,color:"#4fc3f7",accent:"#e1f5fe",weight:9,shape:"diamond",size:1.05},
+  {name:"붉은 번개어",gold:75,color:"#ff5252",accent:"#fff176",weight:7,shape:"slim",size:1.12},
+  {name:"검은 가시고기",gold:95,color:"#222222",accent:"#b0bec5",weight:4,shape:"spiky",size:1.18},
+  {name:"유령 물고기",gold:110,color:"#e0e0e0",accent:"#b39ddb",weight:3,shape:"ghost",size:1.16},
+  {name:"전설의 금빛 잉어",gold:150,color:"#fff08a",accent:"#ff6f00",weight:1.5,shape:"carp",size:1.3},
+  {name:"사막의 고대어",gold:180,color:"#cfa76e",accent:"#4e342e",weight:1,shape:"ancient",size:1.38},
+  {name:"시간을 먹는 물고기",gold:220,color:"#7e57c2",accent:"#b2ebf2",weight:.7,shape:"clock",size:1.42},
+  {name:"붉은 사막 용어",gold:300,color:"#ff1744",accent:"#ffd740",weight:.3,shape:"dragon",size:1.6}
+];
+
+const shopItems = [
+  ["lens","탐정 렌즈",25,"상대 속임수 단서가 조금 더 오래 보임"],
+  ["magnifier","황금 돋보기",45,"상대 속임수 단서가 크게 오래 보임"],
+  ["lucky","행운 주사위",30,"다음 판 주사위 최소 4 이상"],
+  ["loadedDice","납 주사위",40,"다음 판 합계 +2"],
+  ["smoke","연막 가루",30,"내 속임수 적발 확률 감소"],
+  ["doubleBet","두 배 판돈",35,"다음 승패 판돈 2배"],
+  ["shield","나무 방패",35,"망치 벌칙 40G를 20G로 감소"],
+  ["bait","황금 미끼",15,"낚시 성공 보상 +10G"],
+  ["fishNet","작은 그물",25,"찌 흔들림 시간이 길어짐"],
+  ["goldHook","황금 낚싯바늘",35,"좋은 물고기 확률 증가"],
+  ["slowGauge","느린 모래시계",40,"낚시 입질 대기시간 감소"],
+  ["safeBoot","낡은 장화",20,"낚시 실패 손실 1회 방어"]
+];
+
+const diffMap = {
+  easy:{npcCheatMul:.7,npcDetectMul:.65,clue:95,myRisk:.18},
+  normal:{npcCheatMul:1,npcDetectMul:1,clue:65,myRisk:.32},
+  hard:{npcCheatMul:1.25,npcDetectMul:1.25,clue:42,myRisk:.48},
+  hell:{npcCheatMul:1.55,npcDetectMul:1.55,clue:25,myRisk:.65}
+};
+
+const CHARACTER_ANIMATIONS = ["idle","gamble_idle","dice_lift","dice_throw","dice_drop","fish_idle","fish_cast","fish_wait","fish_hook","fish_catch","fish_miss","win","lose","cheat","hit"];
+const characterAssets = {
+  player_gambler:{
+    label:"중갑 도박꾼",
+    url:"assets/characters/player_gambler.glb",
+    scale:1.32,
+    fallback:{tint:"#7a2f17",headgear:"bandana",build:"lean",name:"도박꾼"}
+  },
+  fur_warrior:{
+    label:"털 망토 전사",
+    url:"assets/characters/rival_fur_warrior.glb",
+    scale:1.55,
+    fallback:{headgear:"cap",build:"broad"}
+  },
+  bald_brute:{
+    label:"민머리 거한",
+    url:"assets/characters/rival_bald_brute.glb",
+    scale:1.6,
+    fallback:{headgear:"cap",build:"large"}
+  },
+  hood_assassin:{
+    label:"후드 암살자",
+    url:"assets/characters/rival_hood_assassin.glb",
+    scale:1.48,
+    fallback:{headgear:"hood",build:"lean"}
+  },
+  red_warrior:{
+    label:"붉은 머리 여성 전사",
+    url:"assets/characters/rival_red_warrior.glb",
+    scale:1.48,
+    fallback:{headgear:"veil",build:"slim"}
+  },
+  noble_blonde:{
+    label:"금발 귀족형 캐릭터",
+    url:"assets/characters/rival_noble_blonde.glb",
+    scale:1.48,
+    fallback:{headgear:"crown",build:"medium"}
+  },
+  elder_gambler:{
+    label:"노년 도박사",
+    url:"assets/characters/rival_elder_gambler.glb",
+    scale:1.52,
+    fallback:{headgear:"cap",build:"broad"}
+  },
+  dwarf_brute:{
+    label:"드워프/거구형 캐릭터",
+    url:"assets/characters/rival_dwarf_brute.glb",
+    scale:1.62,
+    fallback:{headgear:"cap",build:"large"}
+  }
+};
+const environmentAssets = {
+  gambleDen:{label:"폐허 도박장", url:"assets/environment/gamble_den.glb", scale:1}
+};
+const fishAssets = Object.fromEntries(fishTypes.map(f => [f.name, {
+  label:f.name,
+  url:`assets/fish/${f.name.replace(/\s+/g,"_")}.glb`,
+  fallback:f
+}]));
+const musicTracks = {
+  desert:{label:"붉은 사막", url:"assets/audio/desert.ogg", fallback:"desert"},
+  oasis:{label:"오아시스", url:"assets/audio/oasis.ogg", fallback:"oasis"},
+  boss:{label:"결투의 밤", url:"assets/audio/boss.ogg", fallback:"boss"},
+  sky:{label:"하늘섬", url:"assets/audio/sky.ogg", fallback:"sky"},
+  fish:{label:"낚시터", url:"assets/audio/fish.ogg", fallback:"fish"},
+  gameOver:{label:"게임 오버", url:"assets/audio/game_over.ogg", fallback:"gameOver"}
+};
+const storyDefaults = {
+  storyFlags:{
+    introSeen:false,
+    jackPreDuelSeen:false,
+    jackDuelStarted:false,
+    jackResolved:false,
+    elderTeaseSeen:false,
+    fishClueFound:false,
+    marketContactMet:false
+  },
+  trust:{"모래눈 잭":0, "붉은 장갑 루나":0, "검은 주사위 노인":0},
+  quests:{
+    main:"빚 문서의 첫 단서를 찾아라",
+    step:"journey",
+    debtPapers:0,
+    leads:0,
+    fishClue:"",
+    marketClue:""
+  },
+  rivalState:{"모래눈 잭":"hostile", "붉은 장갑 루나":"hostile", "검은 주사위 노인":"unknown"},
+  seenCutscenes:{},
+  currentCutscene:"",
+  endingFlags:{},
+  storyMapState:{chapter:"chapter1"},
+  currentNodeId:"intro_desert",
+  availableNodeIds:["intro_desert"],
+  completedNodeIds:[]
+};
+const storyMap = {
+  chapter1:{
+    title:"붉은 사막 여정",
+    nodes:{
+      intro_desert:{type:"story", title:"붉은 밤길", desc:"전직 딜러의 여정이 시작됩니다. 다음 길은 자동으로 이어집니다.", danger:"낮음", reward:"여정 시작", next:["oasis_rumor"]},
+      oasis_rumor:{type:"fish", title:"1. 오아시스 소문", desc:"오후 오아시스에서 낚시를 하며 잭의 오른손 습관을 알아냅니다.", danger:"낮음", reward:"잭 의심 힌트 + 신뢰도", next:["market_whisper"]},
+      market_whisper:{type:"shop", title:"2. 상점의 속삭임", desc:"상인이 붉은 주사위 상자의 의미와 마지막 하트의 위험을 알려줍니다.", danger:"낮음", reward:"결투 힌트 + 아이템", next:["jack_duel"]},
+      jack_duel:{type:"duel", title:"3. 잭의 방", desc:"준비한 단서로 잭과 정면 결투합니다. 하트 3개를 모두 꺼뜨리세요.", danger:"높음", reward:"빚 문서 + 컷신", next:["jack_epilogue"]},
+      jack_epilogue:{type:"story", title:"잭의 후일담", desc:"선택 결과에 따라 잭의 운명과 신뢰도가 결정됩니다.", danger:"없음", reward:"다음 길", next:["road_to_luna"]},
+      road_to_luna:{type:"story", title:"4. 루나의 흔적", desc:"달빛 오아시스의 전직 딜러 루나를 향해 떠납니다.", danger:"중간", reward:"루나 결투 개방", next:["luna_duel"]},
+      luna_duel:{type:"duel", title:"5. 붉은 장갑 루나", desc:"연맹에서 쫓겨난 전직 딜러 루나와 두 번째 결투를 벌입니다.", danger:"높음", reward:"왕궁 카지노 단서", next:["luna_after"]},
+      luna_after:{type:"story", title:"6. 루나의 제안", desc:"루나가 왕궁 카지노와 황금 가면 여왕의 단서를 알려줍니다.", danger:"없음", reward:"검은 협곡 단서", next:["elder_trace"]},
+      elder_trace:{type:"story", title:"7. 검은 주사위 노인", desc:"검은 협곡의 노인 심판이 다음 결투 규칙을 예고합니다.", danger:"높음", reward:"노인 결투 개방", next:["elder_duel"]},
+      elder_duel:{type:"duel", title:"8. 노인 심판의 방", desc:"검은 협곡의 노인 심판과 정면 결투합니다.", danger:"높음", reward:"숨겨진 주사위 규칙", next:["canyon_twins_duel"]},
+      canyon_twins_duel:{type:"duel", title:"9. 협곡의 쌍둥이", desc:"두 명처럼 보이는 손놀림으로 의심 타이밍을 흔드는 사기꾼과 대결합니다.", danger:"높음", reward:"왕궁 입장 단서", next:["chapter3_transition"]},
+      chapter3_transition:{type:"story", title:"왕궁으로 가는 길", desc:"검은 협곡을 지나 황금 왕궁 카지노로 향합니다.", danger:"없음", reward:"3장 개방", next:["kardun_duel"]},
+      kardun_duel:{type:"duel", title:"10. 사막왕 카르둔", desc:"무거운 배팅 압박으로 판돈을 키우는 왕과 대결합니다.", danger:"매우 높음", reward:"여왕의 방 열쇠", next:["queen_duel"]},
+      queen_duel:{type:"duel", title:"11. 황금 가면 여왕", desc:"사람들이 스스로 큰 판돈을 걸게 만드는 최종 라이벌과 대결합니다.", danger:"매우 높음", reward:"하늘섬 초대장", next:["chapter4_transition"]},
+      chapter4_transition:{type:"story", title:"하늘섬으로", desc:"왕궁의 높은 탑에서 하늘섬 카지노로 향합니다.", danger:"없음", reward:"4장 개방", next:["zephyr_duel"]},
+      zephyr_duel:{type:"duel", title:"12. 제피르의 바람판", desc:"가벼운 손놀림과 흐릿한 속임수로 승부하는 하늘섬 도박사와 대결합니다.", danger:"매우 높음", reward:"구름왕의 초대", next:["chapter5_transition"]},
+      chapter5_transition:{type:"story", title:"구름 위 최종장", desc:"하늘섬 최상층, 구름왕의 도박장으로 올라갑니다.", danger:"없음", reward:"5장 개방", next:["argon_duel"]},
+      argon_duel:{type:"duel", title:"13. 구름왕 아르곤", desc:"가장 희미한 속임수와 높은 판돈으로 마지막 승부를 벌입니다.", danger:"최고", reward:"엔딩", next:["final_epilogue"]},
+      final_epilogue:{type:"story", title:"붉은 사막의 끝", desc:"모든 빚 문서의 이름을 해방하는 결말입니다.", danger:"없음", reward:"엔딩", next:[]}
+    }
+  }
+};
+const cutscenes = {
+  opening_desert:[
+    {type:"fadeIn", title:"CHAPTER 1", text:"붉은 사막의 밤. 모래 아래에는 갚지 못한 이름들이 묻혀 있습니다.", camera:"tableWide", music:"desert"},
+    {type:"dialogue", title:"붉은 주사위 상자", text:"당신은 카지노 연맹에서 도망친 전직 딜러입니다. 손에는 사람의 목숨이 아니라 승부 의지를 시험하는 붉은 주사위 상자만 남았습니다.", camera:"diceBoxClose", pose:"idle"},
+    {type:"dialogue", title:"첫 단서", text:"첫 번째 빚 문서 조각은 모래눈 잭에게 있습니다. 그는 악당이라기보다, 돈이 필요한 사람에 가깝다는 소문이 따라붙습니다.", camera:"rivalClose", pose:"cheat"},
+    {type:"dialogue", title:"지도", text:"사막의 길은 카드처럼 펼쳐집니다. 소문, 상점, 결투, 다음 상대가 한 줄의 이야기처럼 이어집니다.", camera:"tableWide"},
+    {type:"end", effect:() => {
+      G.storyFlags.introSeen = true;
+      completeCurrentNode("intro");
+    }}
+  ],
+  jack_intro:[
+    {type:"fadeIn", title:"폐쇄된 도박방", text:"문이 닫히고, 천장 전등이 테이블 위만 비춥니다.", camera:"tableWide", music:"boss"},
+    {type:"dialogue", title:"모래눈 잭", text:"“난 널 미워하지 않아. 그냥 오늘은, 내가 져서는 안 되는 날이야.”", camera:"rivalClose", pose:"idle"},
+    {type:"dialogue", title:"붉은 주사위 상자", text:"잭이 상자를 밀어냅니다. 세 개의 하트는 목숨이 아니라 승부 의지입니다. 마지막 하트가 꺼지면 빚 문서가 이름을 기억합니다.", camera:"diceBoxClose", pose:"cheat"},
+    {type:"end", effect:() => {
+      G.storyFlags.jackPreDuelSeen = true;
+      G.storyFlags.jackDuelStarted = true;
+      G.quests.step = "duel";
+      G.rivalState[G.rival.name] = "hostile";
+      G.msg = "좁은 도박방의 문이 닫혔습니다. 잭의 오른손을 관찰하세요.";
+      applySceneVisibility();
+      startRound();
+    }}
+  ],
+  jack_after_win:[
+    {type:"fadeIn", title:"승부 후", text:"마지막 하트 전광판이 꺼지고, 잭의 손이 테이블 위에서 멈춥니다.", camera:"rivalClose", music:"desert", pose:"lose"},
+    {type:"dialogue", title:"모래눈 잭", text:"“동생 치료비만 아니었으면 이런 판에 앉지 않았어. 연맹은 그런 사람만 골라.”", camera:"rivalClose", pose:"lose"},
+    {type:"choice", title:"잭의 빚 문서", text:"잭은 빚 문서 조각을 내밉니다. 그를 어떻게 기억할지 선택해야 합니다.", choices:[
+      {label:"치료비를 돕고 설득한다", effect:() => resolveJackChoice("ally")},
+      {label:"거래로 단서만 받는다", effect:() => resolveJackChoice("persuaded")},
+      {label:"외면하고 떠난다", effect:() => resolveJackChoice("cornered")}
+    ]},
+    {type:"end"}
+  ],
+  road_to_luna:[
+    {type:"fadeIn", title:"달빛 오아시스", text:"잭의 빚 문서 조각은 달빛 오아시스의 오래된 딜러 표식과 이어져 있습니다.", camera:"tableWide", music:"oasis"},
+    {type:"dialogue", title:"붉은 장갑", text:"모래 위에 붉은 장갑 한 짝이 놓여 있습니다. 왕궁 카지노에서 쫓겨난 딜러, 루나의 흔적입니다.", camera:"diceBoxClose", pose:"idle"},
+    {type:"end", effect:() => completeCurrentNode("travel")}
+  ],
+  luna_intro:[
+    {type:"fadeIn", title:"붉은 장갑 루나", text:"루나는 잭처럼 변명하지 않습니다. 그녀는 당신의 주사위 상자를 보더니 조용히 웃습니다.", camera:"rivalClose", music:"boss", pose:"idle"},
+    {type:"dialogue", title:"루나", text:"“연맹의 딜러였던 사람이 연맹을 무너뜨리겠다고? 좋아. 그럼 네 손이 아직 떨리는지 보자.”", camera:"rivalClose", pose:"cheat"},
+    {type:"end", effect:() => {
+      G.quests.step = "duel";
+      G.msg = "루나와의 결투가 시작됩니다. 그녀는 배팅 흐름을 읽습니다.";
+      startRound();
+    }}
+  ],
+  luna_after_win:[
+    {type:"fadeIn", title:"루나의 패배", text:"루나의 마지막 하트가 꺼지자, 그녀는 화를 내지 않고 테이블 위 규칙표를 뒤집습니다.", camera:"rivalClose", music:"oasis", pose:"lose"},
+    {type:"dialogue", title:"루나", text:"“황금 가면 여왕은 사람을 속이지 않아. 사람들이 스스로 더 큰 판돈을 걸게 만들지.”", camera:"rivalClose", pose:"idle"},
+    {type:"dialogue", title:"다음 단서", text:"루나는 왕궁 카지노의 초대장을 건넵니다. 다음 이야기는 검은 협곡의 노인 심판과, 여왕의 빚 문서 창고로 이어집니다.", camera:"diceBoxClose", pose:"win"},
+    {type:"end", effect:() => resolveLunaWin()}
+  ],
+  chapter2_transition:[
+    {type:"fadeIn", title:"도박장 밖", text:"문이 열리고, 붉은 모래바람이 꺼져가는 전등빛을 삼킵니다.", camera:"tableWide", music:"desert", pose:"idle"},
+    {type:"dialogue", title:"사막의 길", text:"주인공은 루나의 초대장을 접어 넣고 도박장을 떠납니다. 등 뒤의 소음은 멀어지고, 화면은 점점 어두워집니다.", camera:"playerHands", pose:"idle"},
+    {type:"fadeIn", title:"CHAPTER 2", text:"검은 협곡의 노인", camera:"tableWide", music:"boss"},
+    {type:"dialogue", title:"검은 협곡 카지노", text:"협곡 끝의 작은 방. 낡은 심판석 위에서 검은 주사위가 천천히 굴러갑니다.", camera:"diceBoxClose", pose:"idle"},
+    {type:"end", effect:() => {
+      G.currentNodeId = "elder_trace";
+      setTimeout(() => startNode("elder_trace"), 80);
+    }}
+  ],
+  elder_tease:[
+    {type:"fadeIn", title:"검은 협곡", text:"루나의 초대장 뒷면에는 오래된 심판의 도장이 찍혀 있습니다. 검은 협곡 카지노로 가는 길이 열립니다.", camera:"tableWide", music:"boss"},
+    {type:"dialogue", title:"검은 주사위 노인", text:"소문 속 노인은 주사위를 숨기지 않습니다. 대신 결과가 보이는 순서를 바꿔, 사람들이 스스로 무너지게 만듭니다.", camera:"diceBoxClose", pose:"idle"},
+    {type:"dialogue", title:"다음 규칙", text:"다음 결투에서는 일부 라운드에서 상대 주사위 하나가 늦게 공개됩니다. 단서를 모으지 않으면 의심할 타이밍을 놓치게 됩니다.", camera:"rivalClose", pose:"cheat"},
+    {type:"end", effect:() => {
+      G.storyFlags.elderTeaseSeen = true;
+      G.rivalState["검은 주사위 노인"] = "summoned";
+      G.quests.step = "chapter2";
+      G.quests.main = "검은 협곡에서 노인 심판의 숨겨진 주사위 규칙을 밝혀라";
+      G.msg = "다음 목표: 검은 주사위 노인의 늦게 공개되는 주사위 규칙을 파악하세요.";
+      completeCurrentNode("story");
+    }}
+  ],
+  elder_duel_after_win:[
+    {type:"fadeIn", title:"노인 심판의 패배", text:"노인은 검은 주사위를 멈추고, 공개 순서가 적힌 낡은 판을 뒤집습니다.", camera:"rivalClose", music:"boss", pose:"lose"},
+    {type:"dialogue", title:"검은 주사위 노인", text:"“보이는 순서가 진실은 아니네. 다음 방의 쌍둥이는 그 사실을 몸으로 속일 걸세.”", camera:"diceBoxClose", pose:"idle"},
+    {type:"end", effect:() => completeCurrentNode("victory")}
+  ],
+  canyon_twins_after_win:[
+    {type:"fadeIn", title:"쌍둥이의 침묵", text:"두 개의 손이 동시에 멈추고, 협곡 카지노의 뒷문 열쇠가 테이블 위로 미끄러집니다.", camera:"rivalClose", music:"boss", pose:"lose"},
+    {type:"dialogue", title:"왕궁 입장 단서", text:"“황금 왕궁으로 가. 카르둔은 판돈이 무거울수록 사람을 빨리 무너뜨려.”", camera:"diceBoxClose", pose:"idle"},
+    {type:"end", effect:() => completeCurrentNode("victory")}
+  ],
+  kardun_after_win:[
+    {type:"fadeIn", title:"사막왕의 열쇠", text:"카르둔의 무거운 장갑이 테이블 아래로 떨어지고, 여왕의 방 열쇠가 드러납니다.", camera:"rivalClose", music:"boss", pose:"lose"},
+    {type:"dialogue", title:"사막왕 카르둔", text:"“여왕은 속이지 않는다. 네가 스스로 더 큰 판돈을 걸게 만들 뿐이지.”", camera:"diceBoxClose", pose:"idle"},
+    {type:"end", effect:() => completeCurrentNode("victory")}
+  ],
+  queen_after_win:[
+    {type:"fadeIn", title:"황금 가면의 균열", text:"여왕의 가면에 금이 가고, 하늘섬 카지노의 초대장이 붉은 빛으로 타오릅니다.", camera:"rivalClose", music:"boss", pose:"lose"},
+    {type:"dialogue", title:"황금 가면 여왕", text:"“구름 위에는 더 조용한 왕이 있다. 그 앞에서는 속임수조차 소리가 나지 않아.”", camera:"diceBoxClose", pose:"idle"},
+    {type:"end", effect:() => completeCurrentNode("victory")}
+  ],
+  zephyr_after_win:[
+    {type:"fadeIn", title:"바람판의 끝", text:"제피르가 손을 거두자, 테이블 위 먼지가 구름왕의 문양을 그립니다.", camera:"rivalClose", music:"sky", pose:"lose"},
+    {type:"dialogue", title:"제피르", text:"“최상층으로 가. 아르곤은 거의 움직이지 않아. 그래서 더 무섭지.”", camera:"diceBoxClose", pose:"idle"},
+    {type:"end", effect:() => completeCurrentNode("victory")}
+  ],
+  argon_after_win:[
+    {type:"fadeIn", title:"구름왕의 마지막 하트", text:"아르곤의 마지막 하트가 꺼지고, 구름 아래 붉은 사막의 모든 도박장이 조용해집니다.", camera:"rivalClose", music:"sky", pose:"lose"},
+    {type:"dialogue", title:"구름왕 아르곤", text:"“빚 문서를 태우는 건 승리가 아니야. 그 이름들이 돌아갈 곳을 만드는 게 승리지.”", camera:"playerHands", pose:"idle"},
+    {type:"end", effect:() => completeCurrentNode("victory")}
+  ],
+  chapter3_transition:[
+    {type:"fadeIn", title:"짧은 이동 영상", text:"협곡의 검은 문이 닫히고, 모래 위로 황금 왕궁의 불빛이 번집니다.", camera:"tableWide", music:"boss"},
+    {type:"dialogue", title:"CHAPTER 3", text:"황금 왕궁 카지노. 판돈은 금화가 아니라 사람들의 선택입니다.", camera:"diceBoxClose", pose:"idle"},
+    {type:"end", effect:() => completeCurrentNode("story")}
+  ],
+  chapter4_transition:[
+    {type:"fadeIn", title:"짧은 이동 영상", text:"왕궁의 천장 장치가 열리고, 낡은 승강기가 구름 위로 올라갑니다.", camera:"tableWide", music:"sky"},
+    {type:"dialogue", title:"CHAPTER 4", text:"하늘섬 카지노. 속임수는 손이 아니라 바람처럼 지나갑니다.", camera:"rivalClose", pose:"idle"},
+    {type:"end", effect:() => completeCurrentNode("story")}
+  ],
+  chapter5_transition:[
+    {type:"fadeIn", title:"짧은 이동 영상", text:"하늘섬 최상층의 문이 열리고, 구름왕의 테이블만 하얗게 빛납니다.", camera:"tableWide", music:"sky"},
+    {type:"dialogue", title:"CHAPTER 5", text:"구름 위 최종장. 마지막 하트가 꺼지면 붉은 사막의 빚 문서가 모두 열립니다.", camera:"diceBoxClose", pose:"idle"},
+    {type:"end", effect:() => completeCurrentNode("story")}
+  ],
+  final_epilogue_scene:[
+    {type:"fadeIn", title:"붉은 사막의 끝", text:"마지막 전광판이 꺼지고, 빚 문서의 이름들이 모래바람 속으로 흩어집니다.", camera:"tableWide", music:"desert", pose:"win"},
+    {type:"dialogue", title:"엔딩", text:"주인공은 더 큰 도박장이 아니라, 빚진 사람들이 돌아갈 길을 선택합니다.", camera:"playerHands", pose:"idle"},
+    {type:"end", effect:() => {
+      G.endingFlags.fullStoryComplete = true;
+      finishGame("붉은 사막의 모든 빚 문서를 해방했습니다. 플레이어 승리!");
+    }}
+  ],
+  debt_marked_gameover:[
+    {type:"fadeIn", title:"빚 문서", text:"하트가 모두 꺼지자 테이블 아래에서 낡은 문서가 펼쳐집니다.", camera:"diceBoxClose", music:"gameOver", pose:"lose"},
+    {type:"dialogue", title:"연맹의 표식", text:"붉은 잉크가 스스로 번지고, 당신의 이름이 빚 문서에 새겨집니다.", camera:"playerHands", pose:"lose"},
+    {type:"end"}
+  ]
+};
+const epilogues = {
+  epilogue_jack_ally:{
+    title:"잭의 등불",
+    text:"잭은 동생의 치료비를 마련하고, 오아시스 길목에서 연맹의 전령을 감시하기 시작합니다. 사막에서 당신의 이름은 도박꾼이 아니라 빚진 사람들의 편으로 퍼집니다."
+  },
+  epilogue_jack_persuaded:{
+    title:"거래의 단서",
+    text:"잭은 빚 문서 조각을 넘기고 사라집니다. 그는 당신을 믿지는 않지만, 연맹을 무너뜨릴 가능성만큼은 인정합니다."
+  },
+  epilogue_jack_cornered:{
+    title:"남겨진 의자",
+    text:"단서는 손에 넣었지만 잭은 빈 의자 곁에 남았습니다. 사막의 다음 도박장은 열리지만, 이번 승리는 오래 따뜻하지 않습니다."
+  }
+};
+const storyEvents = {
+  journeyIntro:{
+    title:"붉은 사막의 밤길",
+    text:"당신은 카지노 연맹에서 도망친 전직 딜러입니다. 주머니에는 낡은 붉은 주사위 상자 하나뿐입니다. 첫 단서는 빚 때문에 속임수를 배운 초보 사기꾼, 모래눈 잭에게 있습니다.",
+    choices:[
+      {label:"오아시스에서 소문을 모은다", effect:() => {
+        G.quests.step = "gather";
+        G.scene = "fish";
+        resetFish();
+        applySceneVisibility();
+        G.msg = "오아시스에서 소문과 미끼를 모으세요. 낚시로 잭의 약점을 찾을 수 있습니다.";
+      }},
+      {label:"곧장 도박장으로 간다", effect:() => {
+        G.quests.step = "duel";
+        G.scene = "gamble";
+        applySceneVisibility();
+        playCutscene("jack_intro");
+      }}
+    ]
+  },
+  jackFishClue:{
+    title:"물가의 소문",
+    text:"낚싯줄 끝에서 낡은 표식이 달린 물고기가 튀어 오릅니다. 근처 아이가 말합니다. “잭은 치료비 때문에 일부러 위험한 판돈을 받아요. 하지만 거짓말할 때 오른손 엄지가 떨려요.”",
+    choices:[
+      {label:"잭의 약점을 기억한다", effect:() => {
+        G.storyFlags.fishClueFound = true;
+        G.quests.step = "duel";
+        G.quests.leads = Math.max(G.quests.leads || 0, 1);
+        G.quests.fishClue = "잭은 거짓말할 때 오른손 엄지가 떨린다.";
+        G.trust["모래눈 잭"] = (G.trust["모래눈 잭"] || 0) + 1;
+        G.msg = "단서 획득: 잭의 손 습관. 도박장으로 돌아갑니다.";
+        resetFish();
+        completeCurrentNode("fish");
+      }},
+      {label:"조금 더 준비한다", effect:() => {
+        G.storyFlags.fishClueFound = true;
+        G.quests.leads = Math.max(G.quests.leads || 0, 1);
+        G.quests.fishClue = "잭은 거짓말할 때 오른손 엄지가 떨린다.";
+        G.msg = "잭의 약점을 알았습니다. 상점이나 낚시로 더 준비할 수 있습니다.";
+        resetFish();
+        completeCurrentNode("fish");
+      }}
+    ]
+  },
+  marketContact:{
+    title:"상점의 속삭임",
+    text:"상점 주인이 물건을 건네며 낮게 말합니다. “붉은 주사위 상자는 사람을 해치지 않아. 대신 마지막 의지를 가져가지. 잭이 그걸 가장 무서워해.”",
+    choices:[
+      {label:"정보를 고맙게 받는다", effect:() => {
+        G.storyFlags.marketContactMet = true;
+        G.quests.leads = Math.max(G.quests.leads || 0, 1);
+        G.quests.marketClue = "붉은 주사위 상자는 승부 의지를 시험한다.";
+        G.msg = "상점 단서 획득: 마지막 하트는 승부 의지입니다.";
+        toggleShop(false);
+        completeCurrentNode("shop");
+      }}
+    ]
+  },
+  jackPreDuel:{
+    title:"폐쇄된 도박방",
+    text:"잭은 테이블 건너편에서 붉은 주사위 상자를 밀어냅니다. 이 방에서 하트는 목숨이 아니라 승부 의지입니다. 세 번 흔들리면, 빚 문서에 이름이 새겨집니다.",
+    choices:[
+      {label:"붉은 주사위 상자를 연다", effect:() => {
+        G.storyFlags.jackPreDuelSeen = true;
+        G.storyFlags.jackDuelStarted = true;
+        G.quests.step = "duel";
+        G.rivalState[G.rival.name] = "hostile";
+        G.msg = "좁은 도박방의 문이 닫혔습니다. 잭의 오른손을 관찰하세요.";
+        startRound();
+      }}
+    ]
+  },
+  jackAfterWin:{
+    title:"승부 후: 모래눈 잭",
+    text:"마지막 하트가 꺼지자 잭은 고개를 숙입니다. “동생 치료비만 아니었으면 이런 판에 앉지 않았어.” 그의 손에는 연맹의 빚 문서 조각이 있습니다.",
+    choices:[
+      {label:"치료비를 돕고 설득한다", effect:() => {
+        resolveJackChoice("ally");
+      }},
+      {label:"거래로 단서만 받는다", effect:() => {
+        resolveJackChoice("persuaded");
+      }},
+      {label:"외면하고 떠난다", effect:() => {
+        resolveJackChoice("cornered");
+      }}
+    ]
+  },
+  afterJackTravel:{
+    title:"긴 여정의 시작",
+    text:"잭의 단서는 달빛 오아시스로 이어집니다. 그곳에는 왕궁 카지노에서 쫓겨난 전직 딜러, 붉은 장갑 루나가 기다립니다. 이제 승부 사이의 여행이 당신의 선택을 기억합니다.",
+    choices:[
+      {label:"다음 도박장으로 향한다", effect:() => {
+        G.quests.step = "chapter2";
+        nextRival();
+      }}
+    ]
+  }
+};
+const storyDuelConfigs = {
+  elder_duel:{chapterIndex:2, rivalIndex:0, display:"2장 검은 협곡의 노인", specialty:"상대 주사위 공개 순서를 흔드는 심판", afterWinCutscene:"elder_duel_after_win"},
+  canyon_twins_duel:{chapterIndex:2, rivalIndex:1, display:"2장 검은 협곡의 쌍둥이", specialty:"두 손이 번갈아 움직여 속임수 힌트가 짧게 보임", afterWinCutscene:"canyon_twins_after_win"},
+  kardun_duel:{chapterIndex:3, rivalIndex:0, display:"3장 황금 왕궁", specialty:"무거운 판돈 압박으로 배팅이 쉽게 커짐", afterWinCutscene:"kardun_after_win"},
+  queen_duel:{chapterIndex:3, rivalIndex:1, display:"3장 황금 가면 여왕", specialty:"마지막 하트에서 속임수 움직임이 거의 보이지 않음", afterWinCutscene:"queen_after_win"},
+  zephyr_duel:{chapterIndex:4, rivalIndex:0, display:"4장 하늘섬 카지노", specialty:"가벼운 손놀림으로 힌트 시간이 짧음", afterWinCutscene:"zephyr_after_win"},
+  argon_duel:{chapterIndex:4, rivalIndex:1, display:"5장 구름왕의 테이블", specialty:"최고 난이도의 희미한 속임수와 높은 탐지력", afterWinCutscene:"argon_after_win"}
+};
+const storyCutsceneNodes = {
+  chapter3_transition:"chapter3_transition",
+  chapter4_transition:"chapter4_transition",
+  chapter5_transition:"chapter5_transition",
+  final_epilogue:"final_epilogue_scene"
+};
+
+let G;
+let muted = false;
+let gameStarted = false;
+let titleStillCaptured = false;
+let audioCtx = null;
+let musicTimer = null;
+let gameOverTimer = null;
+let activeMusic = null;
+let activeMusicMode = "";
+let ambientMusicNodes = null;
+let lastScene = "";
+let lastChapter = -1;
+let settings = loadSettings();
+let cutsceneState = null;
+let cutsceneCompleteAction = null;
+let epilogueNextAction = null;
+
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, powerPreference:"high-performance", preserveDrawingBuffer:true});
+renderer.setPixelRatio(settings.pixelRatio);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+if(THREE.ACESFilmicToneMapping) renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(48, 1, .1, 180);
+const clock = new THREE.Clock();
+const gltfLoader = GLTFLoader ? new GLTFLoader() : null;
+const world = new THREE.Group();
+const gambleGroup = new THREE.Group();
+const fishGroup = new THREE.Group();
+const fxGroup = new THREE.Group();
+scene.add(world, gambleGroup, fishGroup, fxGroup);
+
+let hemi, sun, table, playerSprite, rivalSprite, fishCharacter, fishRod, fishingLine, bobber, fishJumpSprite, hammerGroup;
+let ceilingLampLight, ceilingLampBulb, ceilingLampCone;
+let playerHeartBoard, rivalHeartBoard;
+let playerDiceMeshes = [], npcDiceMeshes = [], coins = [], dust = [];
+let playerRig, rivalRig;
+let playerCharacter, rivalCharacter;
+let characterControllers = [];
+let rollSequenceToken = 0;
+const spriteCache = new Map();
+const matCache = new Map();
+const glbCache = new Map();
+const envCache = new Map();
+const fishGlbCache = new Map();
+
+function currentChapter(){ return chapters[G?.chapterIndex || 0] || chapters[chapters.length - 1]; }
+function chapterFishPool(){
+  const names = currentChapter().fish;
+  const pool = fishTypes.filter(f => names.includes(f.name));
+  return pool.length ? pool : fishTypes;
+}
+function diff(){ return diffMap[$("difficulty").value] || diffMap.normal; }
+function die(){ return 1 + Math.floor(Math.random() * 6); }
+function sum(a){ return a[0] + a[1]; }
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function pickFish(pool){
+  let list = pool.slice();
+  if(G.items.goldHook > 0) list = list.map(f => ({...f, weight:f.weight * (f.gold >= 55 ? 1.8 : .8)}));
+  const total = list.reduce((s,f) => s + f.weight, 0);
+  let r = Math.random() * total;
+  for(const f of list){ r -= f.weight; if(r <= 0) return fishTypes.find(x => x.name === f.name) || f; }
+  return pool[0];
+}
+function rarity(f){
+  if(f.gold >= 200) return "신화";
+  if(f.gold >= 110) return "전설";
+  if(f.gold >= 55) return "희귀";
+  if(f.gold >= 25) return "고급";
+  return "일반";
+}
+function qualityPixelRatio(quality){
+  const dpr = window.devicePixelRatio || 1;
+  if(quality === "high") return Math.min(dpr, 1.75);
+  if(quality === "low") return Math.min(dpr, 1);
+  return Math.min(dpr, 1.35);
+}
+function loadSettings(){
+  try {
+    const raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null") || {};
+    const quality = raw.quality || "balanced";
+    return {
+      volume: clamp(Number(raw.volume ?? 70), 0, 100),
+      sfx: raw.sfx === "off" ? "off" : "on",
+      quality,
+      windowMode: raw.windowMode || "browser",
+      gambleBrightness: clamp(Number(raw.gambleBrightness ?? 80), 45, 130),
+      fishBrightness: clamp(Number(raw.fishBrightness ?? 145), 80, 180),
+      lampFlicker: raw.lampFlicker === "off" ? "off" : "on",
+      pixelRatio: qualityPixelRatio(quality)
+    };
+  } catch {
+    return {volume:70, sfx:"on", quality:"balanced", windowMode:"browser", gambleBrightness:80, fishBrightness:145, lampFlicker:"on", pixelRatio:qualityPixelRatio("balanced")};
+  }
+}
+function saveSettings(){
+  settings.pixelRatio = qualityPixelRatio(settings.quality);
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+function applySettingsToUi(){
+  $("volumeRange").value = settings.volume;
+  $("volumeLabel").textContent = `${settings.volume}%`;
+  $("sfxToggle").value = settings.sfx;
+  $("qualitySelect").value = settings.quality;
+  $("windowSelect").value = settings.windowMode;
+  $("gambleBrightnessRange").value = settings.gambleBrightness;
+  $("gambleBrightnessLabel").textContent = `${settings.gambleBrightness}%`;
+  $("fishBrightnessRange").value = settings.fishBrightness;
+  $("fishBrightnessLabel").textContent = `${settings.fishBrightness}%`;
+  $("lampFlickerToggle").value = settings.lampFlicker;
+}
+function applyRenderQuality(){
+  renderer.setPixelRatio(settings.pixelRatio);
+  renderer.shadowMap.enabled = settings.quality !== "low";
+  if(sun) sun.shadow.mapSize.set(settings.quality === "high" ? 1536 : 1024, settings.quality === "high" ? 1536 : 1024);
+  resize();
+}
+function sceneBrightness(){
+  return G?.scene === "fish" ? settings.fishBrightness / 100 : settings.gambleBrightness / 100;
+}
+function applySceneLighting(){
+  if(!G || !hemi || !sun) return;
+  const b = sceneBrightness();
+  if(G.scene === "fish"){
+    scene.background = new THREE.Color("#d98b55");
+    scene.fog.color.set("#d98b55");
+    scene.fog.near = 46;
+    scene.fog.far = 120;
+    hemi.color.set("#ffe0a6");
+    hemi.groundColor.set("#6f4a25");
+    hemi.intensity = 1.38 * b;
+    sun.color.set("#ffd08a");
+    sun.intensity = 1.18 * b;
+    sun.position.set(-10,18,8);
+    if(ceilingLampLight) ceilingLampLight.intensity = 0;
+    if(ceilingLampBulb?.material) ceilingLampBulb.material.emissiveIntensity = .22;
+    return;
+  }
+  const ch = currentChapter();
+  scene.background = new THREE.Color(ch.bg[0]);
+  scene.fog.color.set(ch.bg[0]);
+  hemi.color.set("#d6b98a");
+  hemi.groundColor.set(ch.bg[2]);
+  sun.color.set("#9a6d44");
+  sun.position.set(-14,24,12);
+  hemi.intensity = .48 * b;
+  sun.intensity = .28 * b;
+  scene.fog.near = 18;
+  scene.fog.far = 64;
+  if(ceilingLampLight){
+    ceilingLampLight.userData.baseIntensity = 4.6 * b;
+    ceilingLampLight.intensity = ceilingLampLight.userData.baseIntensity;
+  }
+  if(ceilingLampBulb?.material) ceilingLampBulb.material.emissiveIntensity = 1.1 * b;
+}
+
+function baseStoryState(old){
+  const state = {
+    storyFlags:{...storyDefaults.storyFlags, ...(old?.storyFlags || {})},
+    trust:{...storyDefaults.trust, ...(old?.trust || {})},
+    quests:{...storyDefaults.quests, ...(old?.quests || {})},
+    rivalState:{...storyDefaults.rivalState, ...(old?.rivalState || {})},
+    seenCutscenes:{...storyDefaults.seenCutscenes, ...(old?.seenCutscenes || {})},
+    currentCutscene:old?.currentCutscene || "",
+    endingFlags:{...storyDefaults.endingFlags, ...(old?.endingFlags || {})},
+    storyMapState:{...storyDefaults.storyMapState, ...(old?.storyMapState || {})},
+    currentNodeId:old?.currentNodeId || storyDefaults.currentNodeId,
+    availableNodeIds:[...(old?.availableNodeIds || storyDefaults.availableNodeIds)],
+    completedNodeIds:[...(old?.completedNodeIds || storyDefaults.completedNodeIds)]
+  };
+  if(state.completedNodeIds.includes("elder_trace") && !state.completedNodeIds.includes("elder_duel") && !state.availableNodeIds.includes("elder_duel")){
+    state.availableNodeIds.push("elder_duel");
+  }
+  return state;
+}
+function isCutsceneActive(){
+  return !!cutsceneState || $("cutsceneOverlay")?.classList.contains("visible") || $("epilogueOverlay")?.classList.contains("visible") || $("mapOverlay")?.classList.contains("visible");
+}
+function cameraPreset(name){
+  const presets = {
+    tableWide:{pos:[0,4.55,9.8], look:[0,2.15,-2.5]},
+    rivalClose:{pos:[0,3.25,2.0], look:[0,2.65,-4.45]},
+    diceBoxClose:{pos:[-1.8,3.05,4.1], look:[0,1.72,.05]},
+    playerHands:{pos:[0,3.25,7.15], look:[0,1.85,.2]}
+  };
+  return presets[name] || presets.tableWide;
+}
+function applyCutsceneCamera(name){
+  const p = cameraPreset(name);
+  camera.position.set(...p.pos);
+  camera.lookAt(...p.look);
+}
+function playCutscene(id, onComplete=null){
+  const steps = cutscenes[id];
+  if(!steps) return false;
+  $("storyOverlay").classList.remove("visible");
+  cutsceneCompleteAction = onComplete;
+  cutsceneState = {id, index:-1, waitingChoice:false};
+  G.currentCutscene = id;
+  G.seenCutscenes[id] = true;
+  $("cutsceneOverlay").classList.add("visible");
+  advanceCutscene();
+  saveGame();
+  refreshTitleQuest();
+  return true;
+}
+function advanceCutscene(){
+  if(!cutsceneState || cutsceneState.waitingChoice) return;
+  const steps = cutscenes[cutsceneState.id] || [];
+  cutsceneState.index++;
+  const step = steps[cutsceneState.index];
+  if(!step){ finishCutscene(); return; }
+  renderCutsceneStep(step);
+}
+function renderCutsceneStep(step){
+  const overlay = $("cutsceneOverlay");
+  const choices = $("cutsceneChoices");
+  const video = $("cutsceneVideo");
+  choices.innerHTML = "";
+  video.pause();
+  video.removeAttribute("src");
+  video.style.display = "none";
+  $("cutsceneTitle").textContent = step.title || "붉은 사막";
+  $("cutsceneText").textContent = step.text || "";
+  $("cutsceneHint").style.display = step.type === "choice" ? "none" : "block";
+  overlay.classList.toggle("fade", step.type === "fadeIn" || step.type === "fadeOut");
+  if(step.camera) applyCutsceneCamera(step.camera);
+  if(step.music && gameStarted) startMusic(step.music);
+  if(step.pose) playCharacterPose("both", step.pose, .18);
+  if(step.message) G.msg = step.message;
+  if(step.video){
+    video.src = step.video;
+    video.style.display = "block";
+    video.play().catch(() => {});
+  }
+  if(step.type === "choice"){
+    cutsceneState.waitingChoice = true;
+    for(const choice of step.choices || []){
+      const btn = document.createElement("button");
+      btn.textContent = choice.label;
+      btn.onclick = () => {
+        cutsceneState.waitingChoice = false;
+        choice.effect?.();
+        saveGame();
+        updateHUD();
+        advanceCutscene();
+      };
+      choices.appendChild(btn);
+    }
+    return;
+  }
+  if(step.type === "end"){
+    step.effect?.();
+    finishCutscene();
+  }
+}
+function finishCutscene(){
+  if(!cutsceneState) return;
+  const id = cutsceneState.id;
+  cutsceneState = null;
+  G.currentCutscene = "";
+  $("cutsceneOverlay").classList.remove("visible","fade");
+  $("cutsceneChoices").innerHTML = "";
+  cutsceneCompleteAction?.(id);
+  cutsceneCompleteAction = null;
+  if(!G.gameOver) applySceneVisibility();
+  saveGame();
+  updateHUD();
+}
+function resolveJackChoice(outcome){
+  G.storyFlags.jackResolved = true;
+  G.rivalState["모래눈 잭"] = outcome;
+  G.quests.step = "travel";
+  if(G.currentNodeId === "jack_duel") completeCurrentNode("victory", false);
+  else if(!G.endingFlags.jackDebtAwarded){
+    G.quests.debtPapers = (G.quests.debtPapers || 0) + 1;
+    G.endingFlags.jackDebtAwarded = true;
+  }
+  G.currentNodeId = "jack_epilogue";
+  if(outcome === "ally"){
+    G.trust["모래눈 잭"] = (G.trust["모래눈 잭"] || 0) + 3;
+    G.msg = "잭이 동료가 되었습니다. 빚 문서 단서 +1";
+    showEpilogue("epilogue_jack_ally");
+  } else if(outcome === "persuaded"){
+    G.trust["모래눈 잭"] = (G.trust["모래눈 잭"] || 0) + 1;
+    G.msg = "잭에게서 빚 문서 단서를 받았습니다.";
+    showEpilogue("epilogue_jack_persuaded");
+  } else {
+    G.msg = "단서는 얻었지만 잭의 신뢰는 얻지 못했습니다.";
+    showEpilogue("epilogue_jack_cornered");
+  }
+}
+function resolveLunaWin(){
+  G.rivalState["붉은 장갑 루나"] = "ally";
+  G.trust["붉은 장갑 루나"] = (G.trust["붉은 장갑 루나"] || 0) + 2;
+  G.quests.step = "chapter2";
+  G.quests.main = "검은 협곡의 노인 심판을 찾아 다음 규칙을 밝혀라";
+  G.msg = "보상: 왕궁 카지노 초대장, 루나 신뢰 +2, 빚 문서 조각 +1";
+  if(G.currentNodeId === "luna_duel") completeCurrentNode("victory", false);
+  G.currentNodeId = "luna_after";
+  completeCurrentNode("story", false);
+  setTimeout(() => {
+    if(!G.gameOver) playCutscene("chapter2_transition");
+  }, 80);
+}
+function showEpilogue(id){
+  const epilogue = epilogues[id];
+  if(!epilogue) return false;
+  G.endingFlags[id] = true;
+  $("epilogueTitle").textContent = epilogue.title;
+  $("epilogueText").textContent = epilogue.text;
+  $("epilogueOverlay").classList.add("visible");
+  epilogueNextAction = () => {
+    $("epilogueOverlay").classList.remove("visible");
+    completeCurrentNode("epilogue");
+  };
+  saveGame();
+  refreshTitleQuest();
+  return true;
+}
+function nextAutoNode(){
+  const route = ["intro_desert","oasis_rumor","market_whisper","jack_duel","jack_epilogue","road_to_luna","luna_duel","luna_after","elder_trace","elder_duel","canyon_twins_duel","chapter3_transition","kardun_duel","queen_duel","chapter4_transition","zephyr_duel","chapter5_transition","argon_duel","final_epilogue"];
+  const next = route.find(id => !G.completedNodeIds.includes(id) && G.availableNodeIds.includes(id));
+  return next || null;
+}
+function currentMap(){
+  return storyMap[G.storyMapState?.chapter || "chapter1"] || storyMap.chapter1;
+}
+function nodeById(id){
+  return currentMap().nodes[id];
+}
+function isMapActive(){
+  return $("mapOverlay")?.classList.contains("visible");
+}
+function showMapOverlay(){
+  if(!G || G.gameOver) return;
+  $("storyOverlay").classList.remove("visible");
+  $("cutsceneOverlay").classList.remove("visible","fade");
+  $("epilogueOverlay").classList.remove("visible");
+  const map = currentMap();
+  const auto = nextAutoNode();
+  $("mapStatus").textContent = `현재 위치: ${nodeById(G.currentNodeId)?.title || "시작"} · 완료 ${G.completedNodeIds.length} · 다음 ${auto ? nodeById(auto)?.title : "대기"}`;
+  const wrap = $("mapNodes");
+  wrap.innerHTML = "";
+  for(const [id,node] of Object.entries(map.nodes)){
+    const completed = G.completedNodeIds.includes(id);
+    const available = G.availableNodeIds.includes(id);
+    const card = document.createElement("div");
+    card.className = `mapNode ${completed ? "completed" : ""} ${!available && !completed ? "locked" : ""}`;
+    card.innerHTML = `<b>${node.title}</b><p>${node.desc}</p><div class="mapNodeMeta">종류 ${node.type} · 위험 ${node.danger} · 보상 ${node.reward}</div>`;
+    const btn = document.createElement("button");
+    btn.textContent = completed ? "완료" : available ? "자동 진행" : "잠김";
+    btn.disabled = true;
+    btn.onclick = () => selectMapNode(id);
+    card.append(btn);
+    wrap.append(card);
+  }
+  $("mapOverlay").classList.add("visible");
+  saveGame();
+  refreshTitleQuest();
+}
+function selectMapNode(nodeId){
+  const node = nodeById(nodeId);
+  if(!node || !G.availableNodeIds.includes(nodeId)) return;
+  $("mapOverlay").classList.remove("visible");
+  G.currentNodeId = nodeId;
+  startNode(nodeId);
+  saveGame();
+  updateHUD();
+}
+function completeCurrentNode(result="complete", showMap=true){
+  const id = G.currentNodeId;
+  const node = nodeById(id);
+  if(!node) return;
+  if(!G.completedNodeIds.includes(id)) G.completedNodeIds.push(id);
+  applyNodeRewards(id, result);
+  const next = node.next || [];
+  G.availableNodeIds = Array.from(new Set([...G.availableNodeIds, ...next])).filter(n => !G.completedNodeIds.includes(n));
+  if(id !== "intro_desert") G.availableNodeIds = G.availableNodeIds.filter(n => n !== id);
+  saveGame();
+  updateHUD();
+  if(showMap){
+    const next = nextAutoNode();
+    if(next) setTimeout(() => {
+      G.currentNodeId = next;
+      startNode(next);
+    }, next === "elder_trace" || next in storyDuelConfigs ? 120 : 360);
+    else setTimeout(showMapOverlay, 260);
+  }
+}
+function startStoryDuel(nodeId){
+  const cfg = storyDuelConfigs[nodeId];
+  if(!cfg) return false;
+  G.scene = "gamble";
+  G.chapterIndex = cfg.chapterIndex;
+  G.rivalIndex = cfg.rivalIndex;
+  G.rival = chapters[cfg.chapterIndex].rivals[cfg.rivalIndex];
+  G.npcGold = 120 + cfg.chapterIndex * 80 + cfg.rivalIndex * 45;
+  G.playerHearts = G.maxHearts || 3;
+  G.rivalHearts = G.maxHearts || 3;
+  G.round = 1;
+  G.gameOver = false;
+  G.quests.step = "duel";
+  G.quests.main = `${G.rival.name}의 특기: ${cfg.specialty}`;
+  buildScene();
+  applySceneVisibility();
+  G.msg = `${G.rival.name} 결투 시작. 특기: ${cfg.specialty}`;
+  startMusic($("music").value === "none" ? "none" : currentChapter().music);
+  startRound();
+  return true;
+}
+function startNode(nodeId){
+  const node = nodeById(nodeId);
+  if(!node) return;
+  G.quests.step = node.type;
+  if(storyCutsceneNodes[nodeId]){
+    playCutscene(storyCutsceneNodes[nodeId]);
+    return;
+  }
+  if(storyDuelConfigs[nodeId]){
+    startStoryDuel(nodeId);
+    return;
+  }
+  if(nodeId === "intro_desert"){
+    playCutscene("opening_desert");
+  } else if(nodeId === "oasis_rumor"){
+    showStory("오아시스 소문", "낚시를 하며 잭의 손버릇 단서를 찾을 수 있습니다. 그냥 지나가면 결투는 빨라지지만 의심 힌트가 약해집니다.", [
+      {label:"낚시로 단서 찾기", onChoose:() => {
+        G.scene = "fish";
+        resetFish();
+        applySceneVisibility();
+        G.msg = "오아시스 소문 노드입니다. 낚시에 성공하면 잭의 약점을 얻습니다.";
+        startMusic($("music").value === "none" ? "none" : "fish");
+      }},
+      {label:"그냥 지나가기", onChoose:() => {
+        G.msg = "오아시스를 지나쳤습니다. 단서 없이 결투에 들어갑니다.";
+        completeCurrentNode("skipped");
+      }}
+    ]);
+  } else if(nodeId === "market_whisper"){
+    G.scene = "gamble";
+    applySceneVisibility();
+    showStory("상점의 속삭임", "상점에 들르면 붉은 주사위 상자의 단서를 얻을 수 있습니다. 그냥 지나가면 마지막 하트 경고를 받지 못합니다.", [
+      {label:"상점에 들르기", onChoose:() => {
+        G.msg = "상점 노드입니다. 물건을 하나 사면 상인이 붉은 주사위 상자의 비밀을 알려줍니다.";
+        toggleShop(true);
+      }},
+      {label:"그냥 지나가기", onChoose:() => {
+        toggleShop(false);
+        G.msg = "상점을 지나쳤습니다. 마지막 하트 단서 없이 결투에 들어갑니다.";
+        completeCurrentNode("skipped");
+      }}
+    ]);
+  } else if(nodeId === "jack_duel"){
+    G.scene = "gamble";
+    G.rivalIndex = 0;
+    G.rival = currentChapter().rivals[0];
+    G.playerHearts = G.maxHearts || 3;
+    G.rivalHearts = G.maxHearts || 3;
+    G.round = 1;
+    G.storyFlags.jackDuelStarted = false;
+    buildScene();
+    applySceneVisibility();
+    playCutscene("jack_intro");
+  } else if(nodeId === "jack_epilogue"){
+    nextStoryStep();
+  } else if(nodeId === "road_to_luna"){
+    G.quests.step = "travel";
+    playCutscene("road_to_luna");
+  } else if(nodeId === "luna_duel"){
+    G.quests.step = "duel";
+    G.rivalIndex = 1;
+    G.rival = currentChapter().rivals[G.rivalIndex];
+    G.playerHearts = G.maxHearts || 3;
+    G.rivalHearts = G.maxHearts || 3;
+    G.round = 1;
+    G.gameOver = false;
+    buildScene();
+    applySceneVisibility();
+    playCutscene("luna_intro");
+  } else if(nodeId === "luna_after"){
+    playCutscene("luna_after_win");
+  } else if(nodeId === "elder_trace"){
+    G.quests.step = "chapter2";
+    playCutscene("elder_tease");
+  } else if(nodeId === "elder_duel"){
+    G.scene = "gamble";
+    G.chapterIndex = 2;
+    G.rivalIndex = 0;
+    G.rival = chapters[2].rivals[0];
+    G.npcGold = 260;
+    G.playerHearts = G.maxHearts || 3;
+    G.rivalHearts = G.maxHearts || 3;
+    G.round = 1;
+    G.gameOver = false;
+    G.quests.step = "duel";
+    G.quests.main = "검은 주사위 노인의 숨겨진 주사위 규칙을 이겨내라";
+    buildScene();
+    applySceneVisibility();
+    G.msg = "검은 주사위 노인과의 결투가 시작됩니다. 공개되는 순서를 잘 보세요.";
+    startMusic($("music").value === "none" ? "none" : "boss");
+    startRound();
+  }
+}
+function applyNodeRewards(nodeId, result="complete"){
+  if(result === "skipped") return;
+  if(nodeId === "oasis_rumor"){
+    G.storyFlags.fishClueFound = true;
+    G.quests.leads = Math.max(G.quests.leads || 0, 1);
+    G.quests.fishClue = "잭은 거짓말할 때 오른손 엄지가 떨린다.";
+  }
+  if(nodeId === "market_whisper"){
+    G.storyFlags.marketContactMet = true;
+    G.quests.leads = Math.max(G.quests.leads || 0, 1);
+    G.quests.marketClue = "붉은 주사위 상자는 승부 의지를 시험한다.";
+    G.items.lens = Math.max(G.items.lens || 0, 1);
+  }
+  if(nodeId === "jack_duel" && result === "victory"){
+    if(!G.endingFlags.jackDebtAwarded){
+      G.quests.debtPapers = (G.quests.debtPapers || 0) + 1;
+      G.endingFlags.jackDebtAwarded = true;
+    }
+    if(!G.availableNodeIds.includes("jack_epilogue")) G.availableNodeIds.push("jack_epilogue");
+  }
+  if(nodeId === "jack_epilogue"){
+    if(!G.availableNodeIds.includes("road_to_luna")) G.availableNodeIds.push("road_to_luna");
+  }
+  if(nodeId === "road_to_luna"){
+    if(!G.availableNodeIds.includes("luna_duel")) G.availableNodeIds.push("luna_duel");
+  }
+  if(nodeId === "luna_duel" && result === "victory"){
+    if(!G.endingFlags.lunaDebtAwarded){
+      G.quests.debtPapers = (G.quests.debtPapers || 0) + 1;
+      G.endingFlags.lunaDebtAwarded = true;
+    }
+    if(!G.availableNodeIds.includes("luna_after")) G.availableNodeIds.push("luna_after");
+  }
+  if(nodeId === "luna_after"){
+    G.endingFlags.chapter1Complete = true;
+    G.quests.main = "검은 협곡의 노인 심판을 찾아 다음 규칙을 밝혀라";
+    if(!G.availableNodeIds.includes("elder_trace")) G.availableNodeIds.push("elder_trace");
+    G.msg = "루나의 제안으로 검은 협곡의 길이 열렸습니다.";
+  }
+  if(nodeId === "elder_trace"){
+    G.storyFlags.elderTeaseSeen = true;
+    G.endingFlags.chapter1Complete = true;
+    G.rivalState["검은 주사위 노인"] = "summoned";
+    G.quests.main = "검은 협곡에서 노인 심판의 숨겨진 주사위 규칙을 밝혀라";
+    if(!G.availableNodeIds.includes("elder_duel")) G.availableNodeIds.push("elder_duel");
+    G.msg = "2장 시작. 검은 주사위 노인 결투가 열렸습니다.";
+  }
+}
+function showStory(title, text, choices){
+  $("storyTitle").textContent = title;
+  $("storyText").textContent = text;
+  const actions = $("storyActions");
+  actions.innerHTML = "";
+  for(const choice of choices){
+    const btn = document.createElement("button");
+    btn.textContent = choice.label;
+    btn.onclick = () => {
+      $("storyOverlay").classList.remove("visible");
+      choice.onChoose?.();
+      saveGame();
+      updateHUD();
+    };
+    actions.appendChild(btn);
+  }
+  $("storyOverlay").classList.add("visible");
+}
+function showStoryEvent(key){
+  const event = storyEvents[key];
+  if(!event) return false;
+  showStory(event.title, event.text, event.choices.map(choice => ({
+    label:choice.label,
+    onChoose:() => {
+      choice.effect?.();
+      refreshTitleQuest();
+    }
+  })));
+  return true;
+}
+function maybeShowIntroStory(){
+  if(!G || G.storyFlags.introSeen) return;
+  G.storyFlags.introSeen = true;
+  playCutscene("opening_desert");
+}
+function nextStoryStep(){
+  if(G.storyFlags.jackResolved && G.quests.step === "travel"){
+    const state = G.rivalState?.["모래눈 잭"] || "persuaded";
+    const epilogueId = state === "ally" ? "epilogue_jack_ally" : state === "cornered" ? "epilogue_jack_cornered" : "epilogue_jack_persuaded";
+    setTimeout(() => showEpilogue(epilogueId), 280);
+    return true;
+  }
+  return false;
+}
+function refreshTitleQuest(){
+  const el = $("titleQuest");
+  if(!el || !G) return;
+  const q = G.quests || storyDefaults.quests;
+  const trust = G.trust?.["모래눈 잭"] ?? 0;
+  const last = G.currentCutscene || Object.keys(G.seenCutscenes || {}).slice(-1)[0] || "시작 전";
+  const node = nodeById(G.currentNodeId)?.title || "지도";
+  el.textContent = `현재 목표: ${q.main} · 노드 ${node} · 단서 ${q.debtPapers || 0} · 잭 신뢰 ${trust} · 장면 ${last}`;
+}
+
+function ac(){
+  if(muted || settings.sfx === "off" || settings.volume <= 0) return null;
+  const Ctor = window.AudioContext || window.webkitAudioContext;
+  if(!Ctor) return null;
+  if(!audioCtx) audioCtx = new Ctor();
+  if(audioCtx.state === "suspended") audioCtx.resume().catch(()=>{});
+  return audioCtx;
+}
+function beep(freq, dur, type="sine", vol=.06){
+  const a = ac();
+  if(!a) return;
+  const o = a.createOscillator();
+  const g = a.createGain();
+  o.type = type;
+  o.frequency.value = freq;
+  g.gain.value = vol * (settings.volume / 100);
+  o.connect(g).connect(a.destination);
+  g.gain.exponentialRampToValueAtTime(.001, a.currentTime + dur);
+  o.start();
+  o.stop(a.currentTime + dur);
+}
+function musicAc(){
+  if(muted || settings.volume <= 0) return null;
+  const Ctor = window.AudioContext || window.webkitAudioContext;
+  if(!Ctor) return null;
+  if(!audioCtx) audioCtx = new Ctor();
+  if(audioCtx.state === "suspended") audioCtx.resume().catch(()=>{});
+  return audioCtx;
+}
+function musicTone(freq, dur, type="sine", vol=.04, delay=0){
+  const a = musicAc();
+  if(!a) return;
+  const o = a.createOscillator();
+  const g = a.createGain();
+  const start = a.currentTime + delay;
+  o.type = type;
+  o.frequency.setValueAtTime(freq, start);
+  if(type !== "sine") o.detune.setValueAtTime(Math.sin(performance.now()*.001) * 6, start);
+  g.gain.setValueAtTime(.001, start);
+  g.gain.exponentialRampToValueAtTime(Math.max(.001, vol * (settings.volume / 100)), start + .08);
+  g.gain.exponentialRampToValueAtTime(.001, start + dur);
+  o.connect(g).connect(a.destination);
+  o.start(start);
+  o.stop(start + dur + .04);
+}
+function sfx(name){
+  if(name === "roll"){ beep(180,.08,"square"); setTimeout(()=>beep(340,.08,"square"),80); }
+  if(name === "coin"){ beep(760,.09,"triangle"); setTimeout(()=>beep(1080,.12,"triangle"),95); }
+  if(name === "fail") beep(140,.25,"sine",.12);
+  if(name === "bang"){ beep(70,.16,"sawtooth",.22); setTimeout(()=>beep(115,.12,"square",.14),70); }
+  if(name === "fish"){ beep(520,.08,"triangle"); setTimeout(()=>beep(740,.11,"triangle"),80); }
+  if(name === "tick") beep(460,.05,"square",.04);
+}
+function startMusic(mode){
+  stopMusic();
+  if(mode === "none") return;
+  const track = musicTracks[mode] || musicTracks.desert;
+  activeMusicMode = mode;
+  activeMusic = new Audio(track.url);
+  activeMusic.loop = true;
+  activeMusic.volume = Math.min(.78, settings.volume / 100);
+  activeMusic.oncanplaythrough = () => {
+    if(activeMusicMode !== mode) return;
+    activeMusic.play().catch(() => startProceduralMusic(track.fallback || mode));
+  };
+  activeMusic.onerror = () => {
+    if(activeMusicMode === mode) startProceduralMusic(track.fallback || mode);
+  };
+  activeMusic.load();
+}
+function startProceduralMusic(mode){
+  if(musicTimer) clearInterval(musicTimer);
+  musicTimer = null;
+  const patterns = {
+    desert:{bass:[[55,0,49,0,41,0,46,0],[55,0,0,49,0,43,0,0],[41,0,46,0,55,0,49,0]], lead:[[220,0,0,260,0,196,0,0],[0,174,0,196,0,0,220,0],[247,0,196,0,174,0,0,0]], hits:[920,620,1240]},
+    oasis:{bass:[[73,0,82,0,98,0,92,0],[65,0,0,82,0,98,0,0],[82,0,73,0,110,0,98,0]], lead:[[294,0,440,0,330,0,494,0],[0,370,0,392,0,440,0,330],[247,0,294,0,392,0,0,0]], hits:[680,980,1320]},
+    boss:{bass:[[38,0,55,0,41,0,62,0],[36,0,0,48,0,41,0,55],[55,0,41,0,36,0,48,0]], lead:[[110,0,220,0,130,0,247,0],[0,165,0,196,0,130,0,0],[220,0,165,0,110,0,0,0]], hits:[520,740,270]},
+    sky:{bass:[[82,0,98,0,123,0,110,0],[98,0,0,123,0,147,0,0],[73,0,98,0,110,0,147,0]], lead:[[330,0,494,0,370,0,554,0],[0,392,0,440,0,494,0,370],[247,0,330,0,392,0,0,0]], hits:[760,1160,1480]},
+    fish:{bass:[[65,0,73,0,82,0,73,0],[55,0,0,73,0,82,0,0],[73,0,65,0,98,0,82,0]], lead:[[196,0,247,0,294,0,247,0],[0,220,0,294,0,330,0,0],[147,0,196,0,247,0,0,0]], hits:[1120,860,1380]},
+    gameOver:{bass:[[36,0,32,0,28,0,24,0],[32,0,0,28,0,24,0,0]], lead:[[72,0,55,0,48,0,38,0],[0,55,0,48,0,36,0,0]], hits:[240,180,120]}
+  };
+  const p = patterns[mode] || patterns.desert;
+  const bassPattern = p.bass[Math.floor(Math.random() * p.bass.length)];
+  const leadPattern = p.lead[Math.floor(Math.random() * p.lead.length)];
+  let i = 0;
+  musicTimer = setInterval(() => {
+    if(muted) return;
+    const phrase = Math.floor(i / bassPattern.length);
+    const step = i++ % bassPattern.length;
+    const bass = bassPattern[step];
+    const lead = leadPattern[(step + phrase) % leadPattern.length];
+    if(bass) musicTone(bass, .86, "sine", mode === "gameOver" ? .055 : .035);
+    if(lead && (step + phrase) % 2 === 0) musicTone(lead * (Math.random() < .18 ? 2 : 1), .38 + Math.random()*.22, mode === "boss" || mode === "gameOver" ? "sawtooth" : "triangle", .012 + Math.random()*.011, .04);
+    if(step % 4 === 0) musicTone(p.hits[Math.floor(Math.random()*p.hits.length)], .04 + Math.random()*.04, "square", .008 + Math.random()*.008, .02);
+    if(step === 7 && Math.random() < .36) musicTone((lead || bass || 110) * 1.5, .18, "triangle", .008, .08);
+  }, 430 + Math.floor(Math.random()*50));
+}
+function stopMusic(){
+  if(musicTimer) clearInterval(musicTimer);
+  musicTimer = null;
+  if(activeMusic){
+    const old = activeMusic;
+    const fade = setInterval(() => {
+      old.volume = Math.max(0, old.volume - .08);
+      if(old.volume <= .01){ clearInterval(fade); old.pause(); old.src = ""; }
+    }, 60);
+  }
+  activeMusic = null;
+  activeMusicMode = "";
+}
+function stopGameOverMusic(){
+  if(gameOverTimer) clearInterval(gameOverTimer);
+  gameOverTimer = null;
+  if(activeMusicMode === "gameOver") stopMusic();
+}
+function startGameOverMusic(){
+  stopMusic();
+  stopGameOverMusic();
+  activeMusicMode = "gameOver";
+  if(musicTracks.gameOver) startProceduralMusic("gameOver");
+  const pattern = [
+    [72,.42,"sawtooth",.075],
+    [55,.55,"sine",.09],
+    [48,.64,"triangle",.07],
+    [38,.32,"square",.052]
+  ];
+  let i = 0;
+  const play = () => {
+    if(muted || settings.sfx === "off") return;
+    const [freq,dur,type,vol] = pattern[i++ % pattern.length];
+    beep(freq,dur,type,vol);
+    setTimeout(()=>beep(freq*.5,.16,"sawtooth",vol*.55),120);
+  };
+  play();
+  gameOverTimer = setInterval(play, 760);
+}
+
+function material(color, opts={}){
+  const key = color + JSON.stringify(opts);
+  if(matCache.has(key)) return matCache.get(key);
+  const m = new THREE.MeshStandardMaterial({color, roughness:opts.roughness ?? .72, metalness:opts.metalness ?? .08, transparent:!!opts.transparent, opacity:opts.opacity ?? 1, emissive:opts.emissive || "#000000", emissiveIntensity:opts.emissiveIntensity || 0});
+  matCache.set(key, m);
+  return m;
+}
+function makeLabelCanvas(w,h,draw){
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const ctx = c.getContext("2d");
+  ctx.clearRect(0,0,w,h);
+  draw(ctx,w,h);
+  return c;
+}
+function textureFromCanvas(canvas){
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+  return tex;
+}
+function spriteFromTexture(texture, w, h, opts={}){
+  const mat = new THREE.SpriteMaterial({
+    map:texture,
+    transparent:true,
+    depthWrite:false,
+    opacity:opts.opacity ?? 1
+  });
+  const sp = new THREE.Sprite(mat);
+  sp.scale.set(w,h,1);
+  return sp;
+}
+function makeBillboardTexture(kind, data={}){
+  const key = kind + JSON.stringify(data);
+  if(spriteCache.has(key)) return spriteCache.get(key);
+  const canvasTex = makeLabelCanvas(512,768,(ctx,w,h)=>{
+    ctx.clearRect(0,0,w,h);
+    ctx.shadowColor = "rgba(0,0,0,.45)";
+    ctx.shadowBlur = 16;
+    ctx.fillStyle = data.tint || "#9b4b2a";
+    ctx.beginPath(); ctx.ellipse(w/2,h*.48,w*.22,h*.29,0,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = data.accent || "#d6a05f";
+    ctx.beginPath(); ctx.ellipse(w*.5,h*.24,w*.12,h*.12,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#d9a06f";
+    ctx.beginPath(); ctx.ellipse(w*.5,h*.31,w*.105,h*.1,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#211008";
+    ctx.fillRect(w*.45,h*.305,12,10); ctx.fillRect(w*.53,h*.305,12,10);
+    if(data.headgear === "crown"){
+      ctx.fillStyle = "#e0bb58";
+      ctx.beginPath(); ctx.moveTo(w*.38,h*.205); ctx.lineTo(w*.44,h*.14); ctx.lineTo(w*.5,h*.20); ctx.lineTo(w*.56,h*.14); ctx.lineTo(w*.62,h*.205); ctx.closePath(); ctx.fill();
+    } else if(data.headgear === "halo"){
+      ctx.strokeStyle = "#d7efff"; ctx.lineWidth = 10; ctx.beginPath(); ctx.ellipse(w*.5,h*.17,w*.13,h*.035,0,0,Math.PI*2); ctx.stroke();
+    } else {
+      ctx.fillStyle = data.accent || "#d6a05f";
+      ctx.beginPath(); ctx.ellipse(w*.5,h*.205,w*.16,h*.045,0,0,Math.PI*2); ctx.fill();
+    }
+    ctx.fillStyle = "rgba(255,225,140,.92)";
+    ctx.font = "900 36px system-ui,sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(kind === "player" ? "도박꾼" : (data.name || "라이벌"), w/2, h*.74);
+  });
+  const tex = textureFromCanvas(canvasTex);
+  spriteCache.set(key, tex);
+  return tex;
+}
+function makeFishTexture(f){
+  const key = "fish:" + f.name;
+  if(spriteCache.has(key)) return spriteCache.get(key);
+  const canvasTex = makeLabelCanvas(512,256,(ctx,w,h)=>{
+    ctx.clearRect(0,0,w,h);
+    ctx.save();
+    ctx.translate(w/2,h/2);
+    ctx.shadowColor = "rgba(0,0,0,.35)";
+    ctx.shadowBlur = 14;
+    const bodyW = f.shape === "eel" ? 260 : f.shape === "dragon" ? 260 : f.shape === "puffer" ? 150 : 210;
+    const bodyH = f.shape === "puffer" ? 88 : f.shape === "eel" ? 42 : 64;
+    ctx.fillStyle = f.accent;
+    ctx.beginPath(); ctx.moveTo(-bodyW*.55,0); ctx.lineTo(-bodyW*.78,-bodyH*.58); ctx.lineTo(-bodyW*.73,0); ctx.lineTo(-bodyW*.78,bodyH*.58); ctx.closePath(); ctx.fill();
+    const grad = ctx.createLinearGradient(0,-bodyH,0,bodyH);
+    grad.addColorStop(0,"#fff8");
+    grad.addColorStop(.25,f.color);
+    grad.addColorStop(1,f.accent);
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.ellipse(0,0,bodyW*.48,bodyH*.55,0,0,Math.PI*2); ctx.fill();
+    if(["spiky","dragon","ancient"].includes(f.shape)){
+      ctx.fillStyle = f.accent;
+      for(let i=-3;i<=3;i++){ ctx.beginPath(); ctx.moveTo(i*30,-bodyH*.48); ctx.lineTo(i*30+12,-bodyH*.95); ctx.lineTo(i*30+24,-bodyH*.42); ctx.fill(); }
+    }
+    ctx.fillStyle = "#111"; ctx.beginPath(); ctx.arc(bodyW*.31,-bodyH*.08,8,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(bodyW*.34,-bodyH*.12,3,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.42)";
+    for(let i=-2;i<4;i++){ ctx.beginPath(); ctx.ellipse(i*34,-5,12,bodyH*.38,0,0,Math.PI*2); ctx.fill(); }
+    ctx.restore();
+  });
+  const tex = textureFromCanvas(canvasTex);
+  spriteCache.set(key, tex);
+  return tex;
+}
+function makeDiceTexture(value){
+  const canvasTex = makeLabelCanvas(256,256,(ctx,w,h)=>{
+    ctx.fillStyle = "#fff7df"; ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle = "#7a2f17"; ctx.lineWidth = 16; ctx.strokeRect(8,8,w-16,h-16);
+    const pips = {1:[[.5,.5]],2:[[.32,.32],[.68,.68]],3:[[.32,.32],[.5,.5],[.68,.68]],4:[[.32,.32],[.68,.32],[.32,.68],[.68,.68]],5:[[.32,.32],[.68,.32],[.5,.5],[.32,.68],[.68,.68]],6:[[.32,.28],[.68,.28],[.32,.5],[.68,.5],[.32,.72],[.68,.72]]}[value];
+    ctx.fillStyle = "#2a0b06";
+    for(const [x,y] of pips){ ctx.beginPath(); ctx.arc(x*w,y*h,18,0,Math.PI*2); ctx.fill(); }
+  });
+  return textureFromCanvas(canvasTex);
+}
+function makeHeartBoardTexture(hearts, maxHearts, side, flash=0){
+  const canvasTex = makeLabelCanvas(512,192,(ctx,w,h)=>{
+    ctx.fillStyle = "#070303";
+    ctx.fillRect(0,0,w,h);
+    ctx.fillStyle = flash > 0 ? "rgba(255,44,44,.34)" : "rgba(160,30,20,.12)";
+    ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle = "#5e2b16";
+    ctx.lineWidth = 10;
+    ctx.strokeRect(8,8,w-16,h-16);
+    ctx.font = "900 24px ui-monospace,Menlo,Consolas,monospace";
+    ctx.textAlign = "center";
+    ctx.fillStyle = side === "player" ? "#ffd48a" : "#ffb2a0";
+    ctx.fillText(side === "player" ? "PLAYER" : "RIVAL", w/2, 34);
+    const pattern = [
+      "01100110",
+      "11111111",
+      "11111111",
+      "01111110",
+      "00111100",
+      "00011000"
+    ];
+    const cell = 9;
+    const gap = 22;
+    const heartW = pattern[0].length * cell;
+    const totalW = maxHearts * heartW + (maxHearts - 1) * gap;
+    const startX = (w - totalW) / 2;
+    for(let i=0;i<maxHearts;i++){
+      const alive = i < hearts;
+      const baseX = startX + i * (heartW + gap);
+      const baseY = 72;
+      for(let y=0;y<pattern.length;y++){
+        for(let x=0;x<pattern[y].length;x++){
+          if(pattern[y][x] !== "1") continue;
+          const px = baseX + x * cell;
+          const py = baseY + y * cell;
+          ctx.fillStyle = alive ? (flash > 0 ? "#fff1d5" : "#ff3350") : "#241314";
+          ctx.fillRect(px, py, cell-1, cell-1);
+          if(alive){
+            ctx.fillStyle = flash > 0 ? "rgba(255,255,255,.55)" : "rgba(255,148,118,.35)";
+            ctx.fillRect(px+1, py+1, Math.max(2,cell-5), Math.max(2,cell-5));
+          }
+        }
+      }
+    }
+    ctx.fillStyle = "#805035";
+    for(let x=16;x<w-16;x+=18){
+      ctx.fillRect(x,h-22,7,3);
+    }
+  });
+  return textureFromCanvas(canvasTex);
+}
+function clearGroup(g){
+  while(g.children.length) g.remove(g.children[0]);
+}
+function addMesh(parent, geo, mat, pos, rot=[0,0,0], cast=true){
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(...pos);
+  m.rotation.set(...rot);
+  m.castShadow = cast;
+  m.receiveShadow = true;
+  parent.add(m);
+  return m;
+}
+function createHeartBoard(side){
+  const group = new THREE.Group();
+  const box = addMesh(group, new THREE.BoxGeometry(2.65,.72,.18), material("#100807",{roughness:.52,metalness:.42}), [0,0,0], [0,0,0], true);
+  const tex = makeHeartBoardTexture(3,3,side,0);
+  const panelMat = new THREE.MeshStandardMaterial({
+    map:tex,
+    emissive: side === "player" ? "#5d120d" : "#6d0f0f",
+    emissiveMap:tex,
+    emissiveIntensity:.48,
+    roughness:.35,
+    metalness:.05
+  });
+  const panel = addMesh(group, new THREE.PlaneGeometry(2.42,.88), panelMat, [0,.03,.096], [0,0,0], false);
+  const trimMat = material(side === "player" ? "#d99a45" : "#b94a34",{roughness:.34,metalness:.42,emissive:side === "player" ? "#8a3b14" : "#8f1616",emissiveIntensity:.12});
+  addMesh(group, new THREE.BoxGeometry(2.82,.08,.1), trimMat, [0,.46,.11], [0,0,0], false);
+  addMesh(group, new THREE.BoxGeometry(2.82,.08,.1), trimMat, [0,-.46,.11], [0,0,0], false);
+  group.userData = {side, panel, flash:0};
+  return group;
+}
+function updateHeartBoardMesh(board, hearts, maxHearts){
+  if(!board?.userData?.panel) return;
+  const panel = board.userData.panel;
+  const old = panel.material.map;
+  panel.material.map = makeHeartBoardTexture(hearts, maxHearts, board.userData.side, board.userData.flash);
+  panel.material.emissiveMap = panel.material.map;
+  panel.material.emissiveIntensity = .48 + Math.max(0, board.userData.flash || 0) * .55;
+  panel.material.needsUpdate = true;
+  old?.dispose?.();
+}
+function updateHeartBoards(){
+  if(!G) return;
+  updateHeartBoardMesh(playerHeartBoard, G.playerHearts ?? 3, G.maxHearts ?? 3);
+  updateHeartBoardMesh(rivalHeartBoard, G.rivalHearts ?? 3, G.maxHearts ?? 3);
+}
+function flashHeartBoard(side){
+  const board = side === "player" ? playerHeartBoard : rivalHeartBoard;
+  if(!board) return;
+  board.userData.flash = 1;
+  updateHeartBoards();
+}
+function createCharacterRig(kind, data, ch){
+  const rig = new THREE.Group();
+  const archetype = data.archetype || "";
+  const tint = data.tint || (kind === "player" ? "#233241" : "#8a4a29");
+  const accent = data.accent || ch.accent;
+  const baseScale = data.displayScale || 1.45;
+  const buildScale = data.build === "large" ? 1.18 : data.build === "broad" ? 1.1 : data.build === "slim" ? .92 : 1;
+  const scale = baseScale * buildScale;
+  const palette = {
+    cloth:tint,
+    leather:archetype.includes("후드") ? "#1d1713" : archetype.includes("귀족") ? "#20314d" : "#2a1710",
+    metal:archetype.includes("민머리") || archetype.includes("거구") ? "#8f6b3f" : "#9a7a48",
+    trim:accent,
+    skin:archetype.includes("노년") ? "#b88968" : archetype.includes("민머리") ? "#a7754d" : kind === "player" ? "#c88955" : "#d49a67",
+    hair:archetype.includes("붉은") ? "#9d351c" : archetype.includes("금발") ? "#d5aa57" : archetype.includes("노년") ? "#d8d0bd" : archetype.includes("민머리") ? "#5b321d" : "#1a110d"
+  };
+  const bodyMat = material(palette.cloth,{roughness:.64,metalness:.1});
+  const leatherMat = material(palette.leather,{roughness:.82,metalness:.05});
+  const metalMat = material(palette.metal,{roughness:.34,metalness:.58,emissive:palette.trim,emissiveIntensity:.035});
+  const accentMat = material(palette.trim,{roughness:.32,metalness:.34,emissive:palette.trim,emissiveIntensity:.08});
+  const skinMat = material(palette.skin,{roughness:.55});
+  const hairMat = material(palette.hair,{roughness:.78});
+  const darkMat = material("#130907",{roughness:.86});
+  const torso = addMesh(rig, new THREE.CapsuleGeometry(.46*scale,1.28*scale,14,22), bodyMat, [0,1.68*scale,0]);
+  const chest = addMesh(rig, new THREE.BoxGeometry(.86*scale,.74*scale,.18*scale), metalMat, [0,1.96*scale,.18*scale], [0,0,0], true);
+  addMesh(rig, new THREE.BoxGeometry(.72*scale,.12*scale,.2*scale), accentMat, [0,2.25*scale,.25*scale], [0,0,0], true);
+  addMesh(rig, new THREE.TorusGeometry(.49*scale,.035*scale,8,32), metalMat, [0,1.62*scale,.24*scale], [Math.PI/2,0,0], true);
+  const belt = addMesh(rig, new THREE.CylinderGeometry(.48*scale,.5*scale,.16*scale,28), leatherMat, [0,1.08*scale,0], [0,0,0], true);
+  belt.scale.z = .62;
+  const head = addMesh(rig, new THREE.SphereGeometry(.34*scale,28,18), skinMat, [0,2.68*scale,0]);
+  addMesh(rig, new THREE.BoxGeometry(.54*scale,.055*scale,.055*scale), darkMat, [0,2.71*scale,.32*scale], [0,0,0], false);
+  addMesh(rig, new THREE.BoxGeometry(.16*scale,.055*scale,.04*scale), accentMat, [-.13*scale,2.73*scale,.36*scale], [0,0,0], false);
+  addMesh(rig, new THREE.BoxGeometry(.16*scale,.055*scale,.04*scale), accentMat, [.13*scale,2.73*scale,.36*scale], [0,0,0], false);
+  if(archetype.includes("노년") || archetype.includes("거구") || data.build === "broad"){
+    addMesh(rig, new THREE.ConeGeometry(.22*scale,.58*scale,18), hairMat, [0,2.31*scale,.24*scale], [Math.PI,0,0], true);
+  }
+  if(!archetype.includes("민머리")){
+    addMesh(rig, new THREE.SphereGeometry(.36*scale,24,12,0,Math.PI*2,0,Math.PI*.53), hairMat, [0,2.84*scale,.01*scale], [0,0,0], true);
+  }
+  if(archetype.includes("금발") || archetype.includes("붉은")){
+    for(const side of [-1,1]){
+      addMesh(rig, new THREE.CapsuleGeometry(.055*scale,.75*scale,8,10), hairMat, [side*.34*scale,2.48*scale,.06*scale], [0,0,side*.12], true);
+    }
+  }
+  if(data.headgear === "crown"){
+    addMesh(rig, new THREE.ConeGeometry(.48*scale,.48*scale,5), accentMat, [0,3.1*scale,.05*scale], [0,Math.PI/5,0]);
+    addMesh(rig, new THREE.TorusGeometry(.36*scale,.045*scale,8,30), metalMat, [0,2.96*scale,.05*scale], [Math.PI/2,0,0]);
+  } else if(data.headgear === "hood"){
+    addMesh(rig, new THREE.ConeGeometry(.52*scale,.64*scale,28,1,true), leatherMat, [0,2.87*scale,.02*scale], [0,0,0]);
+  } else if(data.headgear === "turban" || data.headgear === "bandana" || data.headgear === "veil"){
+    addMesh(rig, new THREE.TorusGeometry(.36*scale,.08*scale,8,30), accentMat, [0,2.96*scale,.05*scale], [Math.PI/2,0,0]);
+  } else {
+    addMesh(rig, new THREE.CylinderGeometry(.35*scale,.42*scale,.17*scale,28), accentMat, [0,2.98*scale,.05*scale]);
+  }
+  const cloakNeeded = archetype.includes("털") || archetype.includes("후드") || archetype.includes("노년") || archetype.includes("거구") || data.headgear === "crown";
+  const cloak = cloakNeeded ? addMesh(rig, new THREE.BoxGeometry(1.06*scale,1.3*scale,.1*scale), material(archetype.includes("금발") ? "#1b2740" : "#38100d",{roughness:.9}), [0,1.66*scale,-.34*scale], [.08,0,0], true) : null;
+  if(archetype.includes("털")){
+    for(let i=0;i<6;i++){
+      addMesh(rig, new THREE.ConeGeometry(.08*scale,.32*scale,7), material("#c7b394",{roughness:.95}), [(-.36+i*.145)*scale,2.26*scale,-.22*scale], [Math.PI*.12,0,0], true);
+    }
+  }
+  for(const side of [-1,1]){
+    addMesh(rig, new THREE.SphereGeometry(.24*scale,18,12), metalMat, [side*.56*scale,2.18*scale,.04*scale], [0,0,0], true);
+    addMesh(rig, new THREE.BoxGeometry(.18*scale,.12*scale,.18*scale), accentMat, [side*.61*scale,2.18*scale,.14*scale], [0,side*.25,0], true);
+  }
+  const shoulders = [];
+  for(const side of [-1,1]){
+    const shoulder = new THREE.Group();
+    shoulder.position.set(side*.53*scale,2.02*scale,.05*scale);
+    const upper = addMesh(shoulder, new THREE.CapsuleGeometry(.12*scale,.58*scale,10,12), bodyMat, [side*.08*scale,-.34*scale,.04*scale], [0,0,side*.22]);
+    const fore = addMesh(shoulder, new THREE.CapsuleGeometry(.1*scale,.5*scale,10,12), skinMat, [side*.19*scale,-.88*scale,.12*scale], [0,0,side*.12]);
+    const gauntlet = addMesh(shoulder, new THREE.BoxGeometry(.23*scale,.22*scale,.2*scale), metalMat, [side*.25*scale,-1.12*scale,.18*scale], [0,side*.1,0], true);
+    shoulder.userData = {upper, fore, side};
+    shoulders.push(shoulder);
+    rig.add(shoulder);
+  }
+  const handDice = addMesh(rig, new THREE.BoxGeometry(.22*scale,.22*scale,.22*scale), diceMaterial(5), [.48*scale,2.18*scale,.44*scale], [0,0,0], false);
+  handDice.visible = false;
+  for(const side of [-1,1]){
+    addMesh(rig, new THREE.CapsuleGeometry(.15*scale,.72*scale,10,12), leatherMat, [side*.24*scale,.56*scale,.02*scale], [0,0,side*.05]);
+    addMesh(rig, new THREE.BoxGeometry(.26*scale,.24*scale,.42*scale), darkMat, [side*.25*scale,.16*scale,.18*scale], [0,side*.04,0]);
+    addMesh(rig, new THREE.BoxGeometry(.2*scale,.09*scale,.24*scale), metalMat, [side*.25*scale,.92*scale,.14*scale], [0,0,0]);
+  }
+  rig.userData = {scale, kind, shoulders, handDice, head, torso, chest, cloak, pose:"idle", poseT:0};
+  return rig;
+}
+function characterAssetFor(kind, data={}){
+  if(kind === "player") return characterAssets.player_gambler;
+  if(data.headgear === "hood") return characterAssets.hood_assassin;
+  if(data.headgear === "crown") return characterAssets.noble_blonde;
+  if(data.build === "large" && data.name?.includes("왕")) return characterAssets.dwarf_brute;
+  if(data.build === "large") return characterAssets.bald_brute;
+  if(data.name?.includes("노인") || data.name?.includes("구름왕")) return characterAssets.elder_gambler;
+  if(data.headgear === "veil" || data.tint === "#7e1f3d") return characterAssets.red_warrior;
+  if(data.build === "broad") return characterAssets.fur_warrior;
+  return characterAssets.fur_warrior;
+}
+function createRuntimeCharacter(kind, data, ch){
+  const asset = characterAssetFor(kind, data);
+  const root = new THREE.Group();
+  const fallbackData = {...data, ...asset.fallback, accent:data.accent || ch.accent, displayScale:asset.scale, archetype:asset.label};
+  const fallback = createCharacterRig(kind, fallbackData, ch);
+  root.add(fallback);
+  const controller = {
+    kind, asset, root, fallback,
+    mixer:null, actions:{}, activeAction:null, model:null,
+    pose:"idle", poseT:0,
+    play(name, fade=.16){
+      this.pose = CHARACTER_ANIMATIONS.includes(name) ? name : "idle";
+      this.poseT = 0;
+      const glbName = {
+        gamble_idle:"idle",
+        fish_idle:"idle",
+        fish_wait:"idle",
+        fish_cast:"dice_throw",
+        fish_hook:"dice_lift",
+        fish_catch:"win",
+        fish_miss:"lose"
+      }[this.pose] || this.pose;
+      if(this.actions[glbName]){
+        const next = this.actions[glbName];
+        next.reset().fadeIn(fade).play();
+        if(this.activeAction && this.activeAction !== next) this.activeAction.fadeOut(fade);
+        this.activeAction = next;
+      }
+    },
+    update(dt, t){
+      if(this.mixer) this.mixer.update(dt);
+      updateFallbackCharacterPose(this, dt, t);
+    }
+  };
+  characterControllers.push(controller);
+  loadCharacterGlb(controller);
+  controller.play("idle", 0);
+  return controller;
+}
+function loadCharacterGlb(controller){
+  if(!gltfLoader) return;
+  const {asset} = controller;
+  let promise = glbCache.get(asset.url);
+  if(!promise){
+    promise = gltfLoader.loadAsync(asset.url).catch(() => null);
+    glbCache.set(asset.url, promise);
+  }
+  promise.then(gltf => {
+    if(!gltf || !controller.root.parent) return;
+    const model = gltf.scene.clone(true);
+    model.traverse(obj => {
+      if(obj.isMesh){
+        obj.castShadow = true;
+        obj.receiveShadow = true;
+        if(obj.material) obj.material.needsUpdate = true;
+      }
+    });
+    controller.model = model;
+    controller.fallback.visible = false;
+    controller.root.add(model);
+    controller.mixer = new THREE.AnimationMixer(model);
+    controller.actions = {};
+    for(const clip of gltf.animations || []){
+      const normalized = clip.name.trim().toLowerCase();
+      if(CHARACTER_ANIMATIONS.includes(normalized)) controller.actions[normalized] = controller.mixer.clipAction(clip);
+    }
+    controller.play("idle", 0);
+  });
+}
+function updateFallbackCharacterPose(controller, dt, t){
+  const rig = controller.fallback;
+  if(!rig.visible) return;
+  controller.poseT += dt;
+  const p = controller.pose;
+  const u = rig.userData;
+  const shoulders = u.shoulders || [];
+  const right = shoulders.find(s => s.userData.side > 0);
+  const left = shoulders.find(s => s.userData.side < 0);
+  const breathe = Math.sin(t * 2.2) * .035;
+  const fishPose = p.startsWith("fish_");
+  const hiddenCheat = controller === rivalCharacter && G?.npcCheat && !G.npcCheatCaught && G?.phase === "observe";
+  const cheatAmp = hiddenCheat ? (G.clueTimer > 0 ? .045 : .012) * cheatVisibilityFactor() : 0;
+  rig.rotation.x = fishPose ? -.08 + breathe * .28 : breathe * .2;
+  rig.rotation.z = (p === "hit" ? Math.sin(controller.poseT * 28) * .13 : 0) + Math.sin(t * 1.3) * .012;
+  if(u.head){
+    u.head.rotation.x = (p === "lose" || p === "fish_miss") ? .34 : p === "win" || p === "fish_catch" ? -.16 : Math.sin(t*1.7)*.025;
+    u.head.rotation.y = (p === "cheat" ? .055 : 0) + Math.sin(t*1.1)*.018 + Math.sin(t*9.5)*cheatAmp*.45;
+  }
+  if(u.torso) u.torso.rotation.x = fishPose ? -.05 : 0;
+  if(u.chest) u.chest.position.y = 1.96 * u.scale + breathe * .6;
+  if(u.cloak) u.cloak.rotation.x = .08 + Math.sin(t*1.6)*.015;
+  for(const s of shoulders){
+    s.rotation.x = -.25 + breathe;
+    s.rotation.z = s.userData.side * .16;
+    s.rotation.y = 0;
+  }
+  if(u.handDice){
+    u.handDice.visible = ["dice_lift","dice_throw","cheat"].includes(p);
+    u.handDice.rotation.set(t*1.8, t*2.3, t*1.2);
+  }
+  if(right){
+    if(p === "fish_idle"){
+      right.rotation.x = -.9 + Math.sin(t*2.4)*.05;
+      right.rotation.z = -.28;
+      right.rotation.y = .28;
+    } else if(p === "fish_cast"){
+      const k = Math.min(1, controller.poseT / .62);
+      right.rotation.x = -1.6 + k * 2.05;
+      right.rotation.z = -.78 + k * .45;
+      right.rotation.y = .46;
+    } else if(p === "fish_wait"){
+      right.rotation.x = -.82 + Math.sin(t*5.2)*.08;
+      right.rotation.z = -.44;
+      right.rotation.y = .36;
+    } else if(p === "fish_hook"){
+      right.rotation.x = -1.55 + Math.sin(t*10)*.12;
+      right.rotation.z = -.8;
+      right.rotation.y = .44;
+    } else if(p === "fish_catch"){
+      right.rotation.x = -1.95;
+      right.rotation.z = -.52;
+      right.rotation.y = .18;
+    } else if(p === "fish_miss"){
+      right.rotation.x = .12;
+      right.rotation.z = -.08;
+    } else if(p === "dice_lift"){
+      const k = Math.min(1, controller.poseT / .45);
+      right.rotation.x = -.55 - k * .95;
+      right.rotation.z = -.55;
+      right.rotation.y = .35;
+    } else if(p === "dice_throw"){
+      const k = Math.min(1, controller.poseT / .38);
+      right.rotation.x = -1.35 + k * 1.8;
+      right.rotation.z = -.42 + k * .72;
+      right.rotation.y = .25;
+    } else if(p === "cheat"){
+      right.rotation.x = -.68 + Math.sin(t * 12) * .045;
+      right.rotation.z = -.52;
+      right.rotation.y = .32;
+    } else if(p === "win"){
+      right.rotation.x = -1.85;
+      right.rotation.z = -.52;
+    } else if(p === "lose"){
+      right.rotation.x = .18;
+      right.rotation.z = -.12;
+    }
+    if(hiddenCheat){
+      right.rotation.x += Math.sin(t * 17.0) * cheatAmp;
+      right.rotation.y += Math.cos(t * 13.0) * cheatAmp * .55;
+      right.rotation.z += Math.sin(t * 11.0) * cheatAmp * .45;
+    }
+  }
+  if(left){
+    if(p === "fish_idle" || p === "fish_wait"){
+      left.rotation.x = -.72 + Math.sin(t*3.2)*.04;
+      left.rotation.z = .22;
+      left.rotation.y = -.2;
+    } else if(p === "fish_cast" || p === "fish_hook"){
+      left.rotation.x = -1.2;
+      left.rotation.z = .48;
+      left.rotation.y = -.22;
+    } else if(p === "fish_catch"){
+      left.rotation.x = -1.45;
+      left.rotation.z = .5;
+    } else if(p === "hit"){
+      left.rotation.x = -.95;
+      left.rotation.z = .65;
+    } else if(p === "lose"){
+      left.rotation.x = .22;
+      left.rotation.z = .1;
+    } else if(p === "win"){
+      left.rotation.x = -1.15;
+      left.rotation.z = .4;
+    }
+  }
+}
+function loadEnvironmentGlb(slot, parent, fallback){
+  if(!gltfLoader || !slot?.url) return;
+  let promise = envCache.get(slot.url);
+  if(!promise){
+    promise = gltfLoader.loadAsync(slot.url).catch(() => null);
+    envCache.set(slot.url, promise);
+  }
+  promise.then(gltf => {
+    if(!gltf || !parent.parent) return;
+    const model = gltf.scene.clone(true);
+    model.scale.setScalar(slot.scale || 1);
+    model.traverse(obj => {
+      if(obj.isMesh){
+        obj.castShadow = true;
+        obj.receiveShadow = true;
+      }
+    });
+    fallback.visible = false;
+    parent.add(model);
+  });
+}
+function addCandle(parent, x, z, h=.95){
+  addMesh(parent, new THREE.CylinderGeometry(.08,.1,h,14), material("#d9b98a",{roughness:.6}), [x,.65,z], [0,0,0], false);
+  addMesh(parent, new THREE.SphereGeometry(.09,16,10), material("#ff8a35",{emissive:"#ff5a19",emissiveIntensity:.55,transparent:true,opacity:.62}), [x,1.18,z], [0,0,0], false);
+  const light = new THREE.PointLight("#ff8a35", .26, 3.6);
+  light.position.set(x,1.45,z);
+  parent.add(light);
+}
+function buildCeilingLamp(parent, ch){
+  const lamp = new THREE.Group();
+  addMesh(lamp, new THREE.CylinderGeometry(.035,.045,1.35,10), material("#17100c",{roughness:.58,metalness:.55}), [0,6.08,0], [0,0,0], true);
+  addMesh(lamp, new THREE.CylinderGeometry(.72,.38,.42,32,1,true), material("#19100c",{roughness:.46,metalness:.6}), [0,5.28,0], [Math.PI,0,0], true);
+  ceilingLampBulb = addMesh(lamp, new THREE.SphereGeometry(.18,18,12), material("#ffd79a",{emissive:"#ffb55c",emissiveIntensity:1.2,transparent:true,opacity:.82}), [0,5.08,0], [0,0,0], false);
+  const cone = addMesh(lamp, new THREE.CylinderGeometry(1.95,.72,.018,48), material("#ffd79a",{transparent:true,opacity:.07,emissive:"#ff9f40",emissiveIntensity:.05}), [0,1.28,.18], [0,0,0], false);
+  ceilingLampCone = cone;
+  cone.scale.y = 1;
+  const light = new THREE.SpotLight("#ffd1a0", 4.15, 8.8, .34, .82, 1.35);
+  light.position.set(0,5.02,0);
+  light.target.position.set(0,1.18,.42);
+  light.castShadow = true;
+  light.shadow.mapSize.set(1024,1024);
+  light.userData.baseIntensity = 4.15;
+  ceilingLampLight = light;
+  lamp.add(light, light.target);
+  parent.add(lamp);
+  return lamp;
+}
+function buildGambleBackdrop(ch){
+  const root = new THREE.Group();
+  const fallback = new THREE.Group();
+  root.add(fallback);
+  const wallMat = material("#24100d",{roughness:.96});
+  const brickMats = [
+    material("#35170f",{roughness:.93}),
+    material("#4a2014",{roughness:.9}),
+    material("#1b0b08",{roughness:.98})
+  ];
+  for(let row=0; row<9; row++){
+    for(let col=0; col<16; col++){
+      if(Math.random() < .12) continue;
+      const w = .9 + Math.random()*.32;
+      const h = .34 + Math.random()*.1;
+      const x = -10.2 + col*1.35 + (row%2)*.34;
+      const y = 1.0 + row*.48 + Math.random()*.03;
+      const z = -6.82 - Math.random()*.035;
+      const brick = addMesh(fallback, new THREE.BoxGeometry(w,h,.18), brickMats[(row+col)%brickMats.length], [x,y,z], [0,0,(Math.random()-.5)*.018], false);
+      brick.receiveShadow = true;
+    }
+  }
+  addMesh(fallback, new THREE.BoxGeometry(25,.28,.34), material("#140806",{roughness:.9}), [0,5.72,-6.76], [0,0,0], false);
+  addMesh(fallback, new THREE.BoxGeometry(9.2,1.0,.28), material("#160807",{roughness:.8,metalness:.2}), [0,5.05,-6.5], [0,0,.015], true);
+  addMesh(fallback, new THREE.BoxGeometry(8.5,.08,.08), material("#7f5431",{metalness:.25,roughness:.5,emissive:"#3a1708",emissiveIntensity:.12}), [0,5.12,-6.3], [0,0,0], false);
+  for(let i=0;i<4;i++){
+    const x = -2.4 + i*1.6;
+    addMesh(fallback, new THREE.BoxGeometry(.08,.38,.1), material(i%2 ? "#8c6a3f" : "#7b2d1a",{emissive:i%2 ? "#4a3219" : "#3a1008",emissiveIntensity:.12,roughness:.58}), [x,5.13,-6.22], [0,0,(i-1.5)*.035], false);
+  }
+  for(const [x,z,rot] of [[-9.8,-5.95,.2],[9.8,-5.9,-.25],[-7.7,-2.95,.46],[7.7,-2.95,-.46]]){
+    addMesh(fallback, new THREE.BoxGeometry(1.2,2.1,.7), material("#19100d",{roughness:.55,metalness:.5}), [x,1.45,z], [0,rot,0], true);
+    addMesh(fallback, new THREE.CylinderGeometry(.34,.42,.55,20), material("#362219",{roughness:.55,metalness:.35}), [x,2.78,z], [0,0,0], true);
+    addMesh(fallback, new THREE.BoxGeometry(.92,.06,.08), material("#466b5f",{emissive:"#173f32",emissiveIntensity:.18,roughness:.48}), [x,2.17,z-.42], [0,rot,0], false);
+  }
+  for(let i=0;i<5;i++){
+    const cable = addMesh(fallback, new THREE.TorusGeometry(2.4 + i*.22,.022,6,64,Math.PI), material(i%3 ? "#130907" : "#7d3119",{roughness:.82}), [-5.4+i*1.05,6.58 + Math.sin(i*.7)*.36,-6.5], [Math.PI/2,0,Math.PI + i*.18], false);
+    cable.scale.y = .18 + (i%4)*.045;
+  }
+  for(let i=0;i<14;i++){
+    const x = -10 + Math.random()*20;
+    const y = 1.1 + Math.random()*4.8;
+    const z = -5.8 + Math.random()*2.4;
+    const mote = addMesh(fallback, new THREE.SphereGeometry(.018+Math.random()*.034,8,6), material("#d6aa72",{transparent:true,opacity:.14,emissive:"#8a4a18",emissiveIntensity:.06}), [x,y,z], [0,0,0], false);
+    mote.userData.ambientDust = true;
+    mote.userData.seed = Math.random()*10;
+  }
+  addCandle(fallback, -5.8, -5.3, .75);
+  addCandle(fallback, 5.7, -5.25, .82);
+  addCandle(fallback, -1.6, -6.05, .58);
+  const rim = new THREE.PointLight("#8f2a15", .55, 8);
+  rim.position.set(0,4.1,-4.9);
+  fallback.add(rim);
+  const enemyKey = new THREE.SpotLight("#c78652", .72, 8.5, .55, .7, 1.4);
+  enemyKey.position.set(-3.1,5.5,-2.3);
+  enemyKey.target.position.set(0,2.4,-4.45);
+  fallback.add(enemyKey, enemyKey.target);
+  loadEnvironmentGlb(environmentAssets.gambleDen, root, fallback);
+  gambleGroup.add(root);
+}
+function createProceduralFishModel(f){
+  const root = new THREE.Group();
+  const rare = f.gold >= 95 || f.weight <= 4;
+  const bodyMat = material(f.color,{roughness:.38,metalness:.05,emissive:rare ? f.accent : "#000000",emissiveIntensity:rare ? .22 : 0});
+  const accentMat = material(f.accent,{roughness:.32,metalness:.08,emissive:rare ? f.accent : "#000000",emissiveIntensity:rare ? .36 : .04});
+  const pearlMat = material("#f6fbff",{roughness:.18,metalness:.08,emissive:"#dff8ff",emissiveIntensity:.16});
+  const length = f.shape === "eel" || f.shape === "dragon" ? 1.7 : f.shape === "puffer" ? .9 : 1.25;
+  const height = f.shape === "puffer" ? .62 : f.shape === "eel" ? .24 : .42;
+  const body = addMesh(root, new THREE.SphereGeometry(.5,32,18), bodyMat, [0,0,0], [0,0,0], true);
+  body.scale.set(length, height, .32);
+  const head = addMesh(root, new THREE.SphereGeometry(.38,24,14), bodyMat, [length*.42,.02,0], [0,0,0], true);
+  head.scale.set(.78, .86, .72);
+  const tail = addMesh(root, new THREE.ConeGeometry(.34,.72,3), accentMat, [-length*.64,0,0], [0,0,-Math.PI/2], true);
+  tail.scale.set(1, f.shape === "eel" ? .45 : 1.05, .95);
+  for(const side of [-1,1]){
+    const fin = addMesh(root, new THREE.ConeGeometry(.2,.56,3), accentMat, [-.08,-.04,side*.28], [Math.PI/2,0,side*Math.PI*.34], true);
+    fin.scale.y = f.shape === "puffer" ? .72 : 1;
+  }
+  addMesh(root, new THREE.ConeGeometry(.2,.54,3), accentMat, [.12,height*.55,0], [0,0,Math.PI], true);
+  addMesh(root, new THREE.SphereGeometry(.055,12,8), material("#090706",{roughness:.3}), [length*.71,.12,.22], [0,0,0], false);
+  addMesh(root, new THREE.SphereGeometry(.022,8,6), pearlMat, [length*.735,.14,.245], [0,0,0], false);
+  addMesh(root, new THREE.SphereGeometry(.055,12,8), material("#090706",{roughness:.3}), [length*.71,.12,-.22], [0,0,0], false);
+  addMesh(root, new THREE.SphereGeometry(.022,8,6), pearlMat, [length*.735,.14,-.245], [0,0,0], false);
+  for(let i=-3;i<=3;i++){
+    for(let j=0;j<2;j++){
+      const scale = .035 + Math.random()*.01;
+      const z = (j ? .27 : -.27);
+      addMesh(root, new THREE.SphereGeometry(scale,8,5), pearlMat, [i*.16,-.02 + Math.abs(i)*.012,z], [0,0,0], false);
+    }
+  }
+  if(["spiky","dragon","ancient"].includes(f.shape)){
+    for(let i=-3;i<=3;i++){
+      addMesh(root, new THREE.ConeGeometry(.055,.28,6), accentMat, [i*.18,height*.75,0], [0,0,0], true);
+    }
+  }
+  if(f.shape === "catfish"){
+    for(const side of [-1,1]){
+      const whisker = addMesh(root, new THREE.CylinderGeometry(.01,.014,.72,6), accentMat, [length*.72,-.05,side*.22], [Math.PI/2,side*.5,Math.PI/2], false);
+      whisker.scale.x = .75;
+    }
+  }
+  root.userData.tail = tail;
+  root.userData.fish = f;
+  return root;
+}
+function loadFishGlb(asset, root, fallback){
+  if(!gltfLoader || !asset?.url) return;
+  let promise = fishGlbCache.get(asset.url);
+  if(!promise){
+    promise = gltfLoader.loadAsync(asset.url).catch(() => null);
+    fishGlbCache.set(asset.url, promise);
+  }
+  promise.then(gltf => {
+    if(!gltf || !root.parent) return;
+    const model = gltf.scene.clone(true);
+    model.traverse(obj => {
+      if(obj.isMesh){
+        obj.castShadow = true;
+        obj.receiveShadow = true;
+      }
+    });
+    fallback.visible = false;
+    root.add(model);
+  });
+}
+function createFishModel(f){
+  const root = new THREE.Group();
+  const fallback = createProceduralFishModel(f);
+  root.add(fallback);
+  loadFishGlb(fishAssets[f.name], root, fallback);
+  root.userData.fish = f;
+  root.userData.tail = fallback.userData.tail;
+  return root;
+}
+function buildScene(){
+  clearGroup(world); clearGroup(gambleGroup); clearGroup(fishGroup); clearGroup(fxGroup);
+  playerDiceMeshes = []; npcDiceMeshes = []; coins = []; dust = [];
+  characterControllers = [];
+  ceilingLampLight = null; ceilingLampBulb = null; ceilingLampCone = null;
+  const ch = currentChapter();
+  scene.background = new THREE.Color(ch.bg[0]);
+  scene.fog = new THREE.Fog(ch.bg[0], 22, 78);
+  if(hemi) scene.remove(hemi);
+  if(sun) scene.remove(sun);
+  hemi = new THREE.HemisphereLight("#d6b98a", ch.bg[2], .78);
+  sun = new THREE.DirectionalLight("#9a6d44", .62);
+  sun.position.set(-14,24,12); sun.castShadow = true; sun.shadow.mapSize.set(1024,1024);
+  scene.add(hemi, sun);
+  addMesh(world, new THREE.PlaneGeometry(90,90), material(ch.bank,{roughness:.9}), [0,-.04,0], [-Math.PI/2,0,0], false);
+  for(let i=0;i<44;i++){
+    const s = .25 + Math.random()*.8;
+    const x = (Math.random()-.5)*72, z = (Math.random()-.5)*72;
+    addMesh(world, new THREE.ConeGeometry(s, s*3, 6), material(i%3 ? "#5e2f18" : ch.accent,{roughness:.82}), [x,s*1.5,z], [0,Math.random()*Math.PI,0], true);
+  }
+  buildGambleScene(ch);
+  buildFishScene(ch);
+  applySceneVisibility();
+  applySceneLighting();
+}
+function buildGambleScene(ch){
+  addMesh(gambleGroup, new THREE.BoxGeometry(24,.35,14), material("#2b1810",{roughness:.86}), [0,.12,0], [0,0,0], false);
+  addMesh(gambleGroup, new THREE.BoxGeometry(26,8,.45), material("#24100d",{roughness:.92}), [0,4.1,-7.2], [0,0,0], false);
+  addMesh(gambleGroup, new THREE.BoxGeometry(.45,7.2,13), material("#30140d",{roughness:.9}), [-12.4,3.7,-.4], [0,0,0], false);
+  addMesh(gambleGroup, new THREE.BoxGeometry(.45,7.2,13), material("#30140d",{roughness:.9}), [12.4,3.7,-.4], [0,0,0], false);
+  buildGambleBackdrop(ch);
+  buildCeilingLamp(gambleGroup, ch);
+  for(let i=0;i<9;i++){
+    const x = -10 + i * 2.5;
+    addMesh(gambleGroup, new THREE.BoxGeometry(.08,4.2,.12), material(i%2 ? "#5b2a12" : ch.accent,{roughness:.7,metalness:.18,emissive:i%2 ? "#000000" : ch.accent,emissiveIntensity:i%2 ? 0 : .18}), [x,3.8,-6.91], [0,0,Math.sin(i)*.08], false);
+  }
+  for(const [x,z,rot] of [[-9.5,-4.7,.15],[9.4,-4.8,-.18],[-10.4,2.6,.35],[10.6,2.4,-.3]]){
+    addMesh(gambleGroup, new THREE.BoxGeometry(1.8,1.25,1.0), material("#21130f",{roughness:.58,metalness:.35}), [x,1.0,z], [0,rot,0]);
+    addMesh(gambleGroup, new THREE.BoxGeometry(1.15,.08,.12), material("#73f0c7",{emissive:"#25d497",emissiveIntensity:.55,roughness:.3}), [x,1.65,z-.52], [0,rot,0], false);
+  }
+  for(let i=0;i<7;i++){
+    const cable = addMesh(gambleGroup, new THREE.TorusGeometry(2.8 + i*.32,.025,6,72,Math.PI), material(i%2 ? "#180908" : "#72301b",{roughness:.75}), [-4.2+i*1.4,6.8 + Math.sin(i)*.45,-6.78], [Math.PI/2,0,Math.PI + i*.2], false);
+    cable.scale.y = .28 + (i%3)*.05;
+  }
+  addMesh(gambleGroup, new THREE.CylinderGeometry(8,9,.75,64), material("#4b190b",{roughness:.62}), [0,.38,0]);
+  table = addMesh(gambleGroup, new THREE.CylinderGeometry(5.5,5.8,.65,64), material("#7a2f17",{roughness:.48}), [0,1.05,0]);
+  addMesh(gambleGroup, new THREE.CylinderGeometry(5.9,6.2,.12,64), material(ch.accent,{metalness:.35,roughness:.28}), [0,1.45,0]);
+  for(let i=0;i<6;i++){
+    const a = i * Math.PI / 3;
+    addMesh(gambleGroup, new THREE.BoxGeometry(4.7,.035,.045), material("#f3d486",{emissive:"#b86a32",emissiveIntensity:.18,roughness:.42}), [Math.cos(a)*1.55,1.54,Math.sin(a)*1.55], [0,a,0], false);
+  }
+  for(const [x,z,w,h] of [[-2.35,-1.25,1.8,1.05],[2.35,-1.25,1.8,1.05],[-2.35,1.28,1.8,1.05],[2.35,1.28,1.8,1.05],[0,0,2.2,1.25]]){
+    addMesh(gambleGroup, new THREE.BoxGeometry(w,.038,.055), material("#ead29c",{emissive:"#a66a25",emissiveIntensity:.14}), [x,1.58,z-h/2], [0,0,0], false);
+    addMesh(gambleGroup, new THREE.BoxGeometry(w,.038,.055), material("#ead29c",{emissive:"#a66a25",emissiveIntensity:.14}), [x,1.58,z+h/2], [0,0,0], false);
+    addMesh(gambleGroup, new THREE.BoxGeometry(.055,.038,h), material("#ead29c",{emissive:"#a66a25",emissiveIntensity:.14}), [x-w/2,1.58,z], [0,0,0], false);
+    addMesh(gambleGroup, new THREE.BoxGeometry(.055,.038,h), material("#ead29c",{emissive:"#a66a25",emissiveIntensity:.14}), [x+w/2,1.58,z], [0,0,0], false);
+  }
+  playerHeartBoard = createHeartBoard("player");
+  playerHeartBoard.position.set(-3.4,1.82,2.78);
+  playerHeartBoard.rotation.set(-.5,.12,0);
+  gambleGroup.add(playerHeartBoard);
+  rivalHeartBoard = createHeartBoard("rival");
+  rivalHeartBoard.position.set(0,1.92,-2.82);
+  rivalHeartBoard.rotation.set(-.52,0,0);
+  rivalHeartBoard.scale.setScalar(1.12);
+  gambleGroup.add(rivalHeartBoard);
+  updateHeartBoards();
+  for(const [x,z,rot] of [[-4.8,3.4,.45],[4.8,3.4,-.45],[-4.8,-3.7,2.7],[4.8,-3.7,-2.7]]){
+    addMesh(gambleGroup, new THREE.CylinderGeometry(.9,1.2,.45,16), material("#4b2a16"), [x,.35,z]);
+    addMesh(gambleGroup, new THREE.BoxGeometry(1.9,2.1,.35), material("#681425"), [x,1.55,z], [0,rot,0]);
+  }
+  playerCharacter = createRuntimeCharacter("player",{tint:"#7a2f17",accent:ch.accent,headgear:"bandana",build:"lean",name:"도박꾼"}, ch);
+  playerCharacter.root.position.set(0,-.9,6.35);
+  playerCharacter.root.rotation.y = Math.PI;
+  gambleGroup.add(playerCharacter.root);
+  rivalCharacter = createRuntimeCharacter("rival", G.rival, ch);
+  rivalCharacter.root.position.set(0,.72,-4.45);
+  rivalCharacter.root.rotation.y = 0;
+  gambleGroup.add(rivalCharacter.root);
+  playerRig = playerCharacter.root;
+  rivalRig = rivalCharacter.root;
+  playerSprite = playerCharacter.root;
+  rivalSprite = rivalCharacter.root;
+  for(let i=0;i<2;i++){
+    const d = addMesh(gambleGroup, new THREE.BoxGeometry(.52,.52,.52), diceMaterial(1), [-.78+i*.6,1.9,.18], [0,0,0]);
+    playerDiceMeshes.push(d);
+    const nd = addMesh(gambleGroup, new THREE.BoxGeometry(.52,.52,.52), diceMaterial(1), [.62+i*.6,1.9,.18], [0,0,0]);
+    npcDiceMeshes.push(nd);
+  }
+  hammerGroup = new THREE.Group();
+  const head = addMesh(hammerGroup, new THREE.BoxGeometry(1.4,.55,.55), material("#ffd15c",{metalness:.2}), [0,.8,0]);
+  const handle = addMesh(hammerGroup, new THREE.CylinderGeometry(.11,.13,2.0,12), material("#5b2a12"), [0,-.28,0], [0,0,.25]);
+  hammerGroup.position.set(0,4.8,-1.6);
+  hammerGroup.visible = false;
+  gambleGroup.add(hammerGroup);
+}
+function buildFishScene(ch){
+  addMesh(fishGroup, new THREE.PlaneGeometry(90,90), material(ch.bank,{roughness:.9}), [0,0,0], [-Math.PI/2,0,0], false);
+  const waterMat = material(ch.water,{roughness:.35,metalness:.05,transparent:true,opacity:.82,emissive:ch.water,emissiveIntensity:.08});
+  addMesh(fishGroup, new THREE.PlaneGeometry(38,22,16,8), waterMat, [5,.04,-2], [-Math.PI/2,0,0], false);
+  addMesh(fishGroup, new THREE.TorusGeometry(9.8,.08,10,96,Math.PI*.82), material(ch.accent,{roughness:.45,metalness:.18,emissive:ch.accent,emissiveIntensity:.08}), [5,.12,-2], [Math.PI/2,0,.16], false);
+  for(let i=0;i<26;i++){
+    const x = -14 + Math.random()*12, z = -11 + Math.random()*22;
+    addMesh(fishGroup, new THREE.CylinderGeometry(.06,.09,1.6,8), material("#2e6b2d"), [x,.8,z], [Math.random()*.3,0,Math.random()*.3], false);
+  }
+  for(let i=0;i<16;i++){
+    const s = .22 + Math.random()*.55;
+    addMesh(fishGroup, new THREE.DodecahedronGeometry(s,0), material(i%2 ? "#3d2c22" : "#6a4a31",{roughness:.92}), [-12 + Math.random()*8,.14,-9 + Math.random()*18], [Math.random(),Math.random(),Math.random()], true);
+  }
+  fishCharacter = createRuntimeCharacter("player",{tint:"#263d43",accent:ch.accent,headgear:"bandana",build:"lean",name:"도박꾼"}, ch);
+  fishCharacter.root.position.set(-7.25,.04,3.7);
+  fishCharacter.root.rotation.y = Math.PI*.72;
+  fishGroup.add(fishCharacter.root);
+  fishCharacter.play("fish_idle", 0);
+  fishRod = new THREE.Group();
+  const rodCore = addMesh(fishRod, new THREE.CylinderGeometry(.035,.055,6.8,10), material("#2d1609",{roughness:.68}), [0,0,0], [0,0,0], true);
+  rodCore.position.y = 2.1;
+  rodCore.rotation.z = -.62;
+  const rodTip = addMesh(fishRod, new THREE.SphereGeometry(.08,12,8), material(ch.accent,{emissive:ch.accent,emissiveIntensity:.18}), [-1.98,4.8,0], [0,0,0], false);
+  fishRod.position.set(-5.72,1.0,2.08);
+  fishRod.rotation.y = Math.PI*.72;
+  fishGroup.add(fishRod);
+  fishingLine = addMesh(fishGroup, new THREE.CylinderGeometry(.01,.01,5.8,6), material("#fff7d4",{roughness:.35,transparent:true,opacity:.68}), [-1.15,2.18,.4], [1.12,0,.62], false);
+  bobber = addMesh(fishGroup, new THREE.SphereGeometry(.23,18,12), material("#ff5252",{emissive:"#ff1000",emissiveIntensity:.35}), [3.2,.34,-.8]);
+  fishJumpSprite = createFishModel(fishTypes[0]);
+  fishJumpSprite.visible = false;
+  fishGroup.add(fishJumpSprite);
+}
+function diceMaterial(value){
+  const tex = makeDiceTexture(value);
+  return [
+    new THREE.MeshStandardMaterial({map:tex, roughness:.38}),
+    new THREE.MeshStandardMaterial({map:tex, roughness:.38}),
+    new THREE.MeshStandardMaterial({map:tex, roughness:.38}),
+    new THREE.MeshStandardMaterial({map:tex, roughness:.38}),
+    new THREE.MeshStandardMaterial({map:tex, roughness:.38}),
+    new THREE.MeshStandardMaterial({map:tex, roughness:.38})
+  ];
+}
+function setDiceMeshes(){
+  playerDiceMeshes.forEach((m,i)=>{ m.material = diceMaterial(G.playerDice[i]); });
+  npcDiceMeshes.forEach((m,i)=>{ m.material = diceMaterial(G.npcDice[i]); });
+}
+function applySceneVisibility(){
+  gambleGroup.visible = G.scene === "gamble";
+  fishGroup.visible = G.scene === "fish";
+  if(G.scene === "gamble"){
+    camera.position.set(0, 4.35, 9.55);
+    camera.lookAt(0, 2.28, -2.75);
+  } else {
+    camera.position.set(-2, 8.2, 16);
+    camera.lookAt(0, .8, 0);
+  }
+  applySceneLighting();
+}
+
+function newGame(keep=false, autosave=true){
+  hideGameOver();
+  cutsceneState = null;
+  cutsceneCompleteAction = null;
+  epilogueNextAction = null;
+  $("cutsceneOverlay").classList.remove("visible","fade");
+  $("epilogueOverlay").classList.remove("visible");
+  $("mapOverlay").classList.remove("visible");
+  const old = keep && G ? G : null;
+  const chapterIndex = old ? old.chapterIndex : 0;
+  const rivalIndex = old ? old.rivalIndex : 0;
+  const rivals = chapters[chapterIndex].rivals;
+  const story = baseStoryState(old);
+  G = {
+    scene:"gamble", chapterIndex, round:1, maxRound:99,
+    playerGold:old ? Math.max(60, old.playerGold) : 100,
+    npcGold:100 + chapterIndex * 80 + rivalIndex * 35,
+    bet:old ? old.bet : 10,
+    playerDice:[1,1], npcDice:[1,1],
+    phase:"observe", rolling:false, rollTimer:0, rollT:0,
+    msg:"상대 행동을 관찰하세요. 수상하면 의심하세요.",
+    gameOver:false, winner:"",
+    maxHearts:3, playerHearts:3, rivalHearts:3,
+    rivalIndex, rival:rivals[rivalIndex % rivals.length],
+    npcCheat:false, npcCheatCaught:false, playerCheat:false, playerCheatCaught:false,
+    clueTimer:0, hits:0, hammer:0, hammerTarget:null, shake:0, flash:0,
+    items:old ? {...old.items} : Object.fromEntries(shopItems.map(i=>[i[0],0])),
+    fish:{stage:"ready", msg:"실행 버튼을 눌러 낚싯대를 던지세요.", bobberMove:0, biteTimer:0, fishJump:null},
+    shop:false, fishBook:false,
+    storyFlags:story.storyFlags, trust:story.trust, quests:story.quests, rivalState:story.rivalState,
+    seenCutscenes:story.seenCutscenes, currentCutscene:story.currentCutscene, endingFlags:story.endingFlags,
+    storyMapState:story.storyMapState, currentNodeId:story.currentNodeId,
+    availableNodeIds:story.availableNodeIds, completedNodeIds:story.completedNodeIds
+  };
+  normalizeBet();
+  buildScene();
+  startRound();
+  if(autosave) saveGame();
+  if(gameStarted) startMusic($("music").value === "none" ? "none" : currentChapter().music);
+  updateHUD();
+  updateTitleLoadState();
+  refreshTitleQuest();
+}
+function getRivalHeartReaction(rivalName, heartsLeft){
+  if(rivalName === "모래눈 잭"){
+    if(heartsLeft === 3) return "잭은 허세 섞인 웃음으로 주사위를 굴립니다.";
+    if(heartsLeft === 2) return "잭의 웃음이 흔들리고 오른손이 테이블을 두드립니다.";
+    if(heartsLeft === 1) return "잭은 붉은 주사위 상자를 두려워합니다. 마지막 하트가 승부 의지를 붙잡고 있습니다.";
+    if(heartsLeft <= 0) return "잭의 마지막 하트가 꺼지고 빚 문서 조각이 드러납니다.";
+  }
+  if(rivalName === "붉은 장갑 루나"){
+    if(heartsLeft === 3) return "루나는 침착하게 배팅 흐름을 읽고 있습니다.";
+    if(heartsLeft === 2) return "루나가 의자에 기대며 당신의 다음 배팅을 계산합니다.";
+    if(heartsLeft === 1) return "루나의 붉은 장갑이 테이블을 두드립니다. 마지막 판은 배팅 압박이 강해집니다.";
+    if(heartsLeft <= 0) return "루나의 마지막 하트가 꺼지고 왕궁 카지노의 초대장이 드러납니다.";
+  }
+  if(rivalName === "검은 주사위 노인"){
+    if(heartsLeft <= 1) return "노인의 주사위는 보이는 순서부터 의심해야 합니다.";
+    return "노인은 결과보다 공개되는 순서를 지켜보고 있습니다.";
+  }
+  if(rivalName === "협곡의 쌍둥이 사기꾼") return heartsLeft <= 1 ? "쌍둥이의 손놀림이 더 빨라집니다." : "쌍둥이는 두 방향에서 시선을 흔듭니다.";
+  if(rivalName === "사막왕 카르둔") return heartsLeft <= 1 ? "카르둔이 마지막 판돈을 강하게 밀어붙입니다." : "카르둔의 무거운 장갑이 배팅판을 누릅니다.";
+  if(rivalName === "황금 가면 여왕") return heartsLeft <= 1 ? "여왕의 가면 아래 속임수는 거의 보이지 않습니다." : "여왕은 미소만으로 판돈을 키웁니다.";
+  if(rivalName === "하늘섬 도박사 제피르") return heartsLeft <= 1 ? "제피르의 손끝이 바람처럼 흐려집니다." : "제피르는 가벼운 손놀림으로 시선을 흩뜨립니다.";
+  if(rivalName === "구름왕 아르곤") return heartsLeft <= 1 ? "아르곤의 마지막 하트가 구름빛 아래 희미하게 깜빡입니다." : "아르곤은 거의 움직이지 않고도 판을 흔듭니다.";
+  return heartsLeft <= 0 ? "상대의 승부 의지가 꺼졌습니다." : "";
+}
+function getClueHintForRival(rivalName){
+  const hints = [];
+  if(rivalName === "모래눈 잭"){
+    if(G.storyFlags.fishClueFound){
+      hints.push(G.npcCheat ? "오른손 엄지가 떨립니다. 지금 의심하면 유리합니다." : "잭의 오른손 엄지를 계속 보세요.");
+    }
+    if(G.storyFlags.marketContactMet && G.rivalHearts <= 1){
+      hints.push("마지막 하트는 승부 의지입니다. 흔들리는 순간을 놓치지 마세요.");
+    }
+  }
+  if(rivalName === "붉은 장갑 루나"){
+    if(G.rivalHearts <= 2) hints.push("루나는 배팅 흐름을 읽습니다. 큰 판돈은 신중하게 거세요.");
+    if(G.rivalHearts <= 1) hints.push("루나의 마지막 하트에서는 한 번의 실수가 크게 흔들립니다.");
+  }
+  return hints.join(" ");
+}
+function cheatVisibilityFactor(){
+  const diffMul = {easy:1.12, normal:1, hard:.72, hell:.48}[$("difficulty").value] || 1;
+  const progressMul = Math.max(.38, 1 - (G.chapterIndex * .12 + G.rivalIndex * .05));
+  const heartMul = G.rivalHearts <= 1 ? .78 : 1;
+  return diffMul * progressMul * heartMul;
+}
+function startRound(){
+  rollSequenceToken++;
+  G.phase = "observe";
+  G.playerCheat = false; G.playerCheatCaught = false; G.npcCheatCaught = false;
+  const d = diff();
+  G.npcCheat = Math.random() < G.rival.cheat * d.npcCheatMul;
+  if(G.rival.name === "모래눈 잭" && G.rivalHearts <= 1) G.npcCheat = G.npcCheat || Math.random() < .22;
+  if(G.rival.name === "붉은 장갑 루나" && G.rivalHearts <= 1 && G.round % 2 === 0) G.bet = Math.max(G.bet, 20);
+  if(["사막왕 카르둔","황금 가면 여왕","구름왕 아르곤"].includes(G.rival.name) && G.rivalHearts <= 1) G.bet = Math.max(G.bet, 25);
+  const visibility = cheatVisibilityFactor();
+  G.clueTimer = G.npcCheat ? Math.floor((d.clue + G.items.lens * 30 + G.items.magnifier * 55) * visibility) : 0;
+  if(["황금 가면 여왕","하늘섬 도박사 제피르","구름왕 아르곤"].includes(G.rival.name)) G.clueTimer = Math.floor(G.clueTimer * .72);
+  if(G.npcCheat && G.storyFlags.fishClueFound && G.rival.name === "모래눈 잭") G.clueTimer += Math.floor((G.rivalHearts <= 1 ? 150 : 115) * visibility);
+  if(G.npcCheat && G.storyFlags.marketContactMet) G.clueTimer += Math.floor((G.rivalHearts <= 1 ? 80 : 55) * visibility);
+  const reaction = getRivalHeartReaction(G.rival.name, G.rivalHearts);
+  const storyHint = getClueHintForRival(G.rival.name);
+  G.msg = G.npcCheat ? `라이벌의 손끝이 살짝 흔들립니다. ${storyHint || "수상하면 의심하세요."}` : `${reaction} ${storyHint || "상대 행동을 관찰하세요. 수상하면 의심하세요."}`;
+  setTableDiceVisible(true);
+  playCharacterPose("both", "idle", .22);
+  setDiceMeshes();
+  updateHUD();
+}
+function nextRival(){
+  hideGameOver();
+  if(nextStoryStep()) return;
+  const rivals = currentChapter().rivals;
+  G.rivalIndex = (G.rivalIndex + 1) % rivals.length;
+  G.rival = rivals[G.rivalIndex];
+  G.npcGold = 100 + G.chapterIndex * 80 + G.rivalIndex * 35;
+  G.rivalHearts = G.maxHearts || 3;
+  G.round = 1;
+  G.gameOver = false;
+  G.msg = `새 상대 등장! ${G.rival.name}`;
+  buildScene();
+  startRound();
+  refreshTitleQuest();
+}
+function advanceChapter(){
+  if(G.chapterIndex >= chapters.length - 1){
+    finishGame("붉은 사막의 모든 도박장을 제패했습니다!");
+    return;
+  }
+  G.chapterIndex++;
+  G.rivalIndex = 0;
+  G.playerGold = Math.max(G.playerGold, 100);
+  G.rivalHearts = G.maxHearts || 3;
+  G.round = 1;
+  G.scene = "gamble";
+  G.msg = `${currentChapter().name} 입장! 다음 상대를 쓰러뜨리면 이야기가 진행됩니다.`;
+  buildScene();
+  startRound();
+}
+function playCharacterPose(target, pose, fade=.16){
+  if(target === "player" || target === "both") playerCharacter?.play(pose, fade);
+  if(target === "rival" || target === "both") rivalCharacter?.play(pose, fade);
+}
+function setTableDiceVisible(visible){
+  for(const m of [...playerDiceMeshes, ...npcDiceMeshes]) m.visible = visible;
+}
+function beginDiceRollSequence(){
+  rollSequenceToken++;
+  const token = rollSequenceToken;
+  G.phase = "animatingRoll";
+  G.rolling = false;
+  G.rollTimer = 0;
+  G.rollT = 0;
+  setTableDiceVisible(false);
+  playCharacterPose("both", "dice_lift");
+  sfx("tick");
+  setTimeout(() => {
+    if(token !== rollSequenceToken || G.gameOver || G.phase !== "animatingRoll") return;
+    playCharacterPose("both", "dice_throw");
+    sfx("roll");
+  }, 420);
+  setTimeout(() => {
+    if(token !== rollSequenceToken || G.gameOver || G.phase !== "animatingRoll") return;
+    setTableDiceVisible(true);
+    G.phase = "rolling";
+    G.rolling = true;
+    G.rollTimer = 28;
+    G.rollT = 0;
+  }, 760);
+}
+function act(){
+  if($("helpOverlay").classList.contains("visible")){ closeHelp(); return; }
+  if(isCutsceneActive()) return;
+  if(G.gameOver) return;
+  if(G.scene === "fish"){ fishAction(); return; }
+  if(G.rival.name === "모래눈 잭" && !G.storyFlags.jackDuelStarted){
+    playCutscene("jack_intro");
+    return;
+  }
+  if(G.phase !== "observe") return;
+  beginDiceRollSequence();
+}
+function finishRoll(){
+  G.rolling = false;
+  G.playerDice = [die(),die()];
+  G.npcDice = [die(),die()];
+  if(G.items.lucky > 0){ G.items.lucky--; G.playerDice[0] = Math.max(4,G.playerDice[0]); G.playerDice[1] = Math.max(4,G.playerDice[1]); }
+  let p = sum(G.playerDice), n = sum(G.npcDice);
+  if(G.playerCheat && !G.playerCheatCaught) p += 3;
+  if(G.items.loadedDice > 0){ G.items.loadedDice--; p += 2; }
+  if(G.npcCheat && !G.npcCheatCaught) n += 3;
+  if(G.playerCheat && !G.playerCheatCaught && Math.random() < G.rival.detect * diff().npcDetectMul * .55){
+    playerHammered();
+    setTimeout(() => G.hits >= 3 ? finishGame("망치를 3번 맞아 게임오버! NPC 승리!") : endRound(), 1050);
+    return;
+  }
+  let bet = G.items.doubleBet > 0 ? G.bet * 2 : G.bet;
+  if(G.items.doubleBet > 0) G.items.doubleBet--;
+  G.msg = G.npcCheat && !G.npcCheatCaught ? "상대가 속임수에 성공했다. NPC 합계 +3! " : "";
+  if(p > n){
+    G.playerGold += bet; G.npcGold -= bet; G.rivalHearts = Math.max(0, G.rivalHearts - 1); G.msg += `결과 ${p} 대 ${n}, 플레이어 승리! +${bet}G · 상대 하트 -1`;
+    const reaction = getRivalHeartReaction(G.rival.name, G.rivalHearts);
+    if(reaction) G.msg += ` · ${reaction}`;
+    if(G.rivalHearts === 0) G.msg += G.rival.name === "붉은 장갑 루나" ? " 보상: 왕궁 카지노 초대장과 빚 문서 조각." : " 보상: 빚 문서 조각.";
+    playCharacterPose("player", "win"); playCharacterPose("rival", "lose");
+    flashHeartBoard("rival");
+    spawnCoins(); sfx("coin");
+  }
+  else if(p < n){
+    G.playerGold -= bet; G.npcGold += bet; G.playerHearts = Math.max(0, G.playerHearts - 1); G.msg += `결과 ${p} 대 ${n}, NPC 승리! -${bet}G · 내 하트 -1`;
+    if(G.playerHearts === 1) G.msg += " · 빚 문서에 이름이 번지기 시작합니다.";
+    const pressure = getRivalHeartReaction(G.rival.name, G.rivalHearts);
+    if(pressure) G.msg += ` · ${pressure}`;
+    playCharacterPose("player", "lose"); playCharacterPose("rival", "win");
+    flashHeartBoard("player");
+    spawnDust(); sfx("fail");
+  }
+  else {
+    G.msg += `결과 ${p} 대 ${n}, 무승부!`;
+    playCharacterPose("both", "dice_drop");
+  }
+  updateHeartBoards();
+  setDiceMeshes();
+  saveGame();
+  setTimeout(resolveHeartOutcome, 1200);
+}
+function resolveHeartOutcome(){
+  if(G.gameOver) return;
+  if(G.playerHearts <= 0){
+    G.playerHearts = 0;
+    updateHeartBoards();
+    finishGame("하트를 모두 잃었습니다. 연맹의 빚 문서에 이름이 새겨졌습니다. NPC 승리!");
+    return;
+  }
+  if(G.rivalHearts <= 0){
+    G.rivalHearts = 0;
+    updateHeartBoards();
+    G.msg = getRivalHeartReaction(G.rival.name, 0) || "상대의 승부 의지가 꺼졌습니다.";
+    if(G.rival.name === "모래눈 잭") G.msg += " 보상: 빚 문서 조각 +1, 선택에 따라 잭 신뢰 변화.";
+    if(G.rival.name === "붉은 장갑 루나") G.msg += " 보상: 빚 문서 조각 +1, 루나 신뢰 +2, 검은 협곡 단서.";
+    updateHUD();
+    saveGame();
+    if(G.rival.name === "모래눈 잭" && !G.storyFlags.jackResolved){
+      setTimeout(() => {
+        if(!G.gameOver) playCutscene("jack_after_win");
+      }, 800);
+      return;
+    }
+    if(G.rival.name === "붉은 장갑 루나" && G.currentNodeId === "luna_duel"){
+      setTimeout(() => {
+        if(!G.gameOver) playCutscene("luna_after_win");
+      }, 800);
+      return;
+    }
+    if(storyDuelConfigs[G.currentNodeId]){
+      const cfg = storyDuelConfigs[G.currentNodeId];
+      if(!G.endingFlags[`${G.currentNodeId}_rewarded`]){
+        G.quests.debtPapers = (G.quests.debtPapers || 0) + 1;
+        G.endingFlags[`${G.currentNodeId}_rewarded`] = true;
+      }
+      setTimeout(() => {
+        if(G.gameOver) return;
+        if(cfg.afterWinCutscene) playCutscene(cfg.afterWinCutscene);
+        else completeCurrentNode("victory");
+      }, 800);
+      return;
+    }
+    setTimeout(() => {
+      if(!G.gameOver) nextRival();
+    }, 900);
+    return;
+  }
+  checkGoldGameOver();
+  if(!G.gameOver) endRound();
+}
+function endRound(){
+  if(G.gameOver) return;
+  if(G.playerGold <= 0){ G.playerGold = 0; finishGame("골드가 0G가 되어 게임오버! NPC 승리!"); return; }
+  if(G.npcGold < 0) G.npcGold = 0;
+  G.round++;
+  startRound();
+}
+function finishGame(msg){
+  G.gameOver = true;
+  G.winner = msg;
+  G.phase = "end";
+  G.msg = `게임 종료 · ${msg}`;
+  if(isDefeatGameOver(msg)){
+    if(!G.endingFlags.debtMarkedShown && !isCutsceneActive()){
+      G.endingFlags.debtMarkedShown = true;
+      playCutscene("debt_marked_gameover", () => showGameOver(msg));
+    } else {
+      showGameOver(msg);
+    }
+  }
+  saveGame();
+}
+function suspect(){
+  if(isCutsceneActive()) return;
+  if(G.gameOver || G.scene !== "gamble" || !["observe","rolling"].includes(G.phase)) return;
+  if(G.npcCheat && !G.npcCheatCaught){
+    G.npcCheatCaught = true;
+    G.phase = "caught";
+    G.npcGold -= 40; G.playerGold += 40;
+    G.hammer = 1; G.hammerTarget = "npc";
+    const clue = getClueHintForRival(G.rival.name);
+    G.msg = `속임수 적발! ${clue ? clue + " " : ""}장난감 망치가 쾅! +40G`;
+    playCharacterPose("rival", "hit");
+    playCharacterPose("player", "win");
+    spawnCoins(); sfx("bang");
+    setTimeout(endRound, 1100);
+  } else {
+    G.playerGold -= 5; G.npcGold += 5;
+    G.msg = "괜히 의심했다! 확실한 손버릇이 보일 때 의심하세요. 벌금 5G!";
+    spawnDust(); sfx("fail"); checkGoldGameOver();
+  }
+  saveGame();
+}
+function playerCheat(){
+  if(isCutsceneActive()) return;
+  if(G.gameOver || G.scene !== "gamble" || G.phase !== "observe" || G.playerCheat) return;
+  G.playerCheat = true;
+  playCharacterPose("player", "cheat");
+  let chance = diff().myRisk * G.rival.detect * diff().npcDetectMul;
+  if(G.items.smoke > 0){ G.items.smoke--; chance *= .55; }
+  if(Math.random() < chance){
+    playerHammered();
+    setTimeout(() => G.hits >= 3 ? finishGame("망치를 3번 맞아 게임오버! NPC 승리!") : endRound(), 1050);
+  } else {
+    G.msg = "몰래 속임수 성공! 이번 주사위 합계 +3";
+    sfx("coin");
+  }
+  saveGame();
+}
+function playerHammered(){
+  const loss = G.items.shield > 0 ? 20 : 40;
+  if(G.items.shield > 0) G.items.shield--;
+  G.playerCheatCaught = true;
+  G.hits++;
+  G.playerGold -= loss; G.npcGold += loss;
+  G.hammer = 1; G.hammerTarget = "player";
+  G.msg = `속임수가 들켰다! 망치 벌칙! -${loss}G`;
+  playCharacterPose("player", "hit");
+  playCharacterPose("rival", "win");
+  spawnDust(); sfx("bang"); checkGoldGameOver();
+}
+function fishAction(){
+  if(isCutsceneActive()) return;
+  const f = G.fish;
+  if(f.stage === "ready"){
+    f.stage = "casting";
+    f.msg = "낚싯대를 던졌습니다.";
+    G.msg = f.msg;
+    fishCharacter?.play("fish_cast", .12);
+    setTimeout(() => {
+      if(G.scene !== "fish" || G.gameOver) return;
+      f.stage = "waiting";
+      f.biteTimer = (G.items.slowGauge > 0 ? 70 : 115) + Math.floor(Math.random()*130);
+      f.msg = "입질을 기다리세요.";
+      G.msg = f.msg;
+      fishCharacter?.play("fish_wait", .18);
+    }, 650);
+    return;
+  }
+  if(f.stage === "waiting" && f.bobberMove > 0){
+    f.stage = "caught";
+    const caught = pickFish(chapterFishPool());
+    let gain = caught.gold + (G.items.bait > 0 ? 10 : 0);
+    if(G.items.bait > 0) G.items.bait--;
+    if(G.items.goldHook > 0) G.items.goldHook--;
+    G.playerGold += gain;
+    f.fishJump = {fish:caught, life:92, y:.7, vy:.16};
+    fishCharacter?.play("fish_hook", .1);
+    if(fishJumpSprite) fishGroup.remove(fishJumpSprite);
+    fishJumpSprite = createFishModel(caught);
+    fishGroup.add(fishJumpSprite);
+    fishJumpSprite.visible = true;
+    f.msg = `${caught.name} 획득! +${gain}G`;
+    G.msg = f.msg;
+    sfx("fish"); spawnCoins();
+    setTimeout(() => fishCharacter?.play("fish_catch", .16), 360);
+    if(!G.storyFlags.fishClueFound && G.chapterIndex === 0){
+      setTimeout(() => {
+        if(!G.gameOver) showStoryEvent("jackFishClue");
+      }, 700);
+    } else {
+      setTimeout(resetFish, 1500);
+    }
+    saveGame();
+    return;
+  }
+  if(f.stage === "waiting"){
+    if(G.items.safeBoot > 0){ G.items.safeBoot--; G.msg = "낡은 장화가 실패 손실을 막았습니다."; }
+    else { G.playerGold = Math.max(0, G.playerGold - 3); G.msg = "아직 입질이 아닙니다. 낚싯줄이 끊어졌습니다! -3G"; }
+    fishCharacter?.play("fish_miss", .12);
+    f.bobberMove = 0; sfx("fail"); checkGoldGameOver(); saveGame();
+  }
+}
+function resetFish(){
+  G.fish.stage = "ready";
+  G.fish.msg = "실행 버튼을 눌러 낚싯대를 던지세요.";
+  G.fish.bobberMove = 0;
+  G.fish.biteTimer = 0;
+  G.fish.fishJump = null;
+  if(fishJumpSprite) fishJumpSprite.visible = false;
+  fishCharacter?.play("fish_idle", .18);
+  G.msg = G.fish.msg;
+}
+function checkGoldGameOver(){
+  if(G.playerGold <= 0){ G.playerGold = 0; finishGame("골드가 0G가 되어 게임오버! NPC 승리!"); }
+}
+function toggleScene(){
+  if(isCutsceneActive()) return;
+  if(G.gameOver) return;
+  G.scene = G.scene === "gamble" ? "fish" : "gamble";
+  if(G.scene === "fish") resetFish();
+  applySceneVisibility();
+  if(gameStarted) startMusic($("music").value === "none" ? "none" : (G.scene === "fish" ? "fish" : currentChapter().music));
+  updateHUD();
+}
+function toggleShop(force){
+  const visible = force ?? !$("shopOverlay").classList.contains("visible");
+  $("shopOverlay").classList.toggle("visible", visible);
+  if(visible) renderShop();
+}
+function toggleBook(force){
+  const visible = force ?? !$("bookOverlay").classList.contains("visible");
+  $("bookOverlay").classList.toggle("visible", visible);
+  if(visible) renderBook();
+}
+function buyItem(key){
+  const item = shopItems.find(i => i[0] === key);
+  if(!item) return;
+  const [,name,price] = item;
+  if(G.playerGold < price){ G.msg = "골드가 부족합니다."; sfx("fail"); return; }
+  G.playerGold -= price; G.items[key] = (G.items[key] || 0) + 1;
+  G.msg = `${name} 구매 완료!`;
+  sfx("coin"); normalizeBet(); renderShop(); saveGame();
+  if(!G.storyFlags.marketContactMet && G.chapterIndex === 0){
+    setTimeout(() => {
+      if(!G.gameOver) showStoryEvent("marketContact");
+    }, 220);
+  }
+}
+function maxBetAllowed(){ return Math.max(5, Math.min(100, Math.floor(G.playerGold / 5) * 5)); }
+function normalizeBet(){ G.bet = clamp(Math.round((G.bet || 10) / 5) * 5, 5, maxBetAllowed()); }
+function changeBet(delta){ G.bet = clamp(G.bet + delta, 5, maxBetAllowed()); updateHUD(); saveGame(); }
+
+function renderShop(){
+  const grid = $("shopGrid");
+  grid.innerHTML = "";
+  for(const [key,name,price,desc] of shopItems){
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `<b>${name} - ${price}G</b><p>${desc}</p><p>보유 ${G.items[key] || 0}</p>`;
+    const btn = document.createElement("button");
+    btn.textContent = "구매";
+    btn.disabled = G.playerGold < price;
+    btn.onclick = () => buyItem(key);
+    div.append(btn);
+    grid.append(div);
+  }
+}
+function renderBook(){
+  $("bookTitle").textContent = `${currentChapter().place} 물고기 도감`;
+  const grid = $("bookGrid");
+  grid.innerHTML = "";
+  for(const f of chapterFishPool()){
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `<b>${f.name}</b><p>${rarity(f)} · 보상 ${f.gold}G</p><canvas width="180" height="82"></canvas>`;
+    const ctx = div.querySelector("canvas").getContext("2d");
+    ctx.drawImage(makeFishTexture(f).image, 0, 0, 180, 82);
+    grid.append(div);
+  }
+}
+function closeHelp(){ $("helpOverlay").classList.remove("visible"); }
+function isDefeatGameOver(msg){
+  return msg.includes("NPC 승리") || msg.includes("골드가 0G") || msg.includes("망치를 3번 맞아 게임오버");
+}
+function showGameOver(msg){
+  $("gameOverReason").textContent = msg;
+  $("gameOverOverlay").classList.add("visible");
+  startGameOverMusic();
+}
+function hideGameOver(){
+  $("gameOverOverlay").classList.remove("visible");
+  stopGameOverMusic();
+}
+function hasSave(){
+  try { return !!JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); }
+  catch { return false; }
+}
+function updateTitleLoadState(){
+  if($("titleLoadBtn")) $("titleLoadBtn").disabled = !hasSave();
+  refreshTitleQuest();
+}
+function captureTitleStill(){
+  if(titleStillCaptured) return;
+  try {
+    renderer.render(scene,camera);
+    const data = canvas.toDataURL("image/jpeg", .86);
+    $("titleStill").style.backgroundImage = `linear-gradient(90deg,rgba(0,0,0,.88),rgba(0,0,0,.32) 48%,rgba(0,0,0,.62)),url(${data})`;
+    titleStillCaptured = true;
+  } catch {}
+}
+function enterGame(){
+  hideGameOver();
+  gameStarted = true;
+  document.body.classList.remove("title-mode");
+  $("titleOverlay").style.display = "none";
+  $("settingsOverlay").classList.remove("visible");
+  startMusic($("music").value === "none" ? "none" : currentChapter().music);
+  applySceneLighting();
+  updateHUD();
+}
+function startNewFromTitle(){
+  gameStarted = true;
+  newGame(false, true);
+  enterGame();
+  setTimeout(maybeShowIntroStory, 180);
+}
+function loadFromTitle(){
+  if(!loadGame()){
+    $("titleLoadBtn").textContent = "저장 데이터 없음";
+    setTimeout(()=>{$("titleLoadBtn").textContent = "불러오기"; updateTitleLoadState();}, 900);
+    return;
+  }
+  hideGameOver();
+  enterGame();
+}
+function openSettings(){
+  applySettingsToUi();
+  $("settingsOverlay").classList.add("visible");
+}
+function closeSettings(){
+  settings.volume = Number($("volumeRange").value);
+  settings.sfx = $("sfxToggle").value;
+  settings.quality = $("qualitySelect").value;
+  settings.windowMode = $("windowSelect").value;
+  settings.gambleBrightness = Number($("gambleBrightnessRange").value);
+  settings.fishBrightness = Number($("fishBrightnessRange").value);
+  settings.lampFlicker = $("lampFlickerToggle").value;
+  saveSettings();
+  applyRenderQuality();
+  applySceneLighting();
+  $("settingsOverlay").classList.remove("visible");
+  if(settings.windowMode === "fullscreen" && !document.fullscreenElement){
+    document.documentElement.requestFullscreen?.().catch(()=>{});
+  }
+}
+function applyLiveSettings(){
+  settings.volume = Number($("volumeRange").value);
+  settings.sfx = $("sfxToggle").value;
+  settings.quality = $("qualitySelect").value;
+  settings.windowMode = $("windowSelect").value;
+  settings.gambleBrightness = Number($("gambleBrightnessRange").value);
+  settings.fishBrightness = Number($("fishBrightnessRange").value);
+  settings.lampFlicker = $("lampFlickerToggle").value;
+  saveSettings();
+  applyRenderQuality();
+  applySceneLighting();
+}
+
+function saveGame(){
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      version:1, chapterIndex:G.chapterIndex, rivalIndex:G.rivalIndex, playerGold:G.playerGold, bet:G.bet, items:G.items,
+      playerHearts:G.playerHearts, rivalHearts:G.rivalHearts,
+      storyFlags:G.storyFlags, trust:G.trust, quests:G.quests, rivalState:G.rivalState,
+      seenCutscenes:G.seenCutscenes, currentCutscene:G.currentCutscene, endingFlags:G.endingFlags,
+      storyMapState:G.storyMapState, currentNodeId:G.currentNodeId,
+      availableNodeIds:G.availableNodeIds, completedNodeIds:G.completedNodeIds,
+      settings:{
+        quality:settings.quality, volume:settings.volume, sfx:settings.sfx, windowMode:settings.windowMode,
+        gambleBrightness:settings.gambleBrightness, fishBrightness:settings.fishBrightness, lampFlicker:settings.lampFlicker
+      }
+    }));
+    updateTitleLoadState();
+  } catch {}
+}
+function loadGame(){
+  try {
+    const d = JSON.parse(localStorage.getItem(SAVE_KEY) || "null");
+    if(!d) return false;
+    newGame(false, false);
+    G.chapterIndex = clamp(d.chapterIndex || 0, 0, chapters.length - 1);
+    G.rivalIndex = d.rivalIndex || 0;
+    G.playerGold = d.playerGold || 100;
+    G.bet = d.bet || 10;
+    G.items = d.items || Object.fromEntries(shopItems.map(i=>[i[0],0]));
+    G.rival = currentChapter().rivals[G.rivalIndex % currentChapter().rivals.length];
+    G.maxHearts = 3;
+    G.playerHearts = clamp(d.playerHearts ?? 3, 0, G.maxHearts);
+    G.rivalHearts = clamp(d.rivalHearts ?? 3, 0, G.maxHearts);
+    G.storyFlags = {...storyDefaults.storyFlags, ...(d.storyFlags || {})};
+    G.trust = {...storyDefaults.trust, ...(d.trust || {})};
+    G.quests = {...storyDefaults.quests, ...(d.quests || {})};
+    G.rivalState = {...storyDefaults.rivalState, ...(d.rivalState || {})};
+    G.seenCutscenes = {...storyDefaults.seenCutscenes, ...(d.seenCutscenes || {})};
+    G.currentCutscene = "";
+    G.endingFlags = {...storyDefaults.endingFlags, ...(d.endingFlags || {})};
+    G.storyMapState = {...storyDefaults.storyMapState, ...(d.storyMapState || {})};
+    G.currentNodeId = d.currentNodeId || storyDefaults.currentNodeId;
+    G.availableNodeIds = [...(d.availableNodeIds || storyDefaults.availableNodeIds)];
+    G.completedNodeIds = [...(d.completedNodeIds || storyDefaults.completedNodeIds)];
+    if(d.settings){
+      settings.gambleBrightness = clamp(Number(d.settings.gambleBrightness ?? settings.gambleBrightness), 45, 130);
+      settings.fishBrightness = clamp(Number(d.settings.fishBrightness ?? settings.fishBrightness), 80, 180);
+      settings.lampFlicker = d.settings.lampFlicker === "off" ? "off" : "on";
+      saveSettings();
+      applySettingsToUi();
+    }
+    normalizeBet();
+    buildScene();
+    startRound();
+    saveGame();
+    return true;
+  } catch { return false; }
+}
+
+function spawnCoins(){
+  for(let i=0;i<22;i++){
+    const mesh = addMesh(fxGroup, new THREE.CylinderGeometry(.18,.18,.04,16), material("#ffd15c",{metalness:.55,roughness:.22}), [(Math.random()-.5)*2,2.2 + Math.random()*1.2,-1 + (Math.random()-.5)*2], [Math.PI/2,0,0]);
+    coins.push({mesh, v:new THREE.Vector3((Math.random()-.5)*.08,.07+Math.random()*.05,(Math.random()-.5)*.08), life:70});
+  }
+}
+function spawnDust(){
+  for(let i=0;i<20;i++){
+    const mesh = addMesh(fxGroup, new THREE.SphereGeometry(.12+Math.random()*.18,8,6), material("#8d6e3d",{transparent:true,opacity:.55}), [(Math.random()-.5)*2,1.2 + Math.random()*.8,-1 + (Math.random()-.5)*2], [0,0,0], false);
+    dust.push({mesh, v:new THREE.Vector3((Math.random()-.5)*.07,.035+Math.random()*.025,(Math.random()-.5)*.07), life:58});
+  }
+}
+
+function update(dt){
+  if(G.rolling){
+    G.rollTimer--;
+    G.rollT += dt;
+    G.playerDice = [die(),die()];
+    G.npcDice = [die(),die()];
+    for(const m of [...playerDiceMeshes, ...npcDiceMeshes]){
+      m.rotation.x += dt * 8.5;
+      m.rotation.y += dt * 11;
+      m.position.y = 1.9 + Math.abs(Math.sin(G.rollT * 18)) * .34;
+    }
+    setDiceMeshes();
+    if(G.rollTimer <= 0) finishRoll();
+  } else {
+    playerDiceMeshes.forEach((m,i) => { m.rotation.x += dt*.25; m.rotation.y += dt*.18; m.position.y = 1.9 + Math.sin(performance.now()/420 + i)*.025; });
+    npcDiceMeshes.forEach((m,i) => { m.rotation.x -= dt*.22; m.rotation.y += dt*.16; m.position.y = 1.9 + Math.cos(performance.now()/430 + i)*.025; });
+  }
+  if(G.clueTimer > 0) G.clueTimer--;
+  for(const c of characterControllers) c.update(dt, performance.now() * .001);
+  for(const board of [playerHeartBoard, rivalHeartBoard]){
+    if(board?.userData?.flash > 0){
+      board.userData.flash = Math.max(0, board.userData.flash - dt * 2.8);
+      board.scale.setScalar(1 + Math.sin(board.userData.flash * Math.PI * 5) * .035);
+      updateHeartBoards();
+    } else if(board){
+      board.scale.setScalar(1);
+    }
+  }
+  if(G.hammer > 0){
+    G.hammer -= dt * 1.8;
+    hammerGroup.visible = true;
+    const targetZ = G.hammerTarget === "npc" ? -4.25 : 5.35;
+    hammerGroup.position.set(0, 4.5 + Math.sin(G.hammer*Math.PI)*2.5, targetZ);
+    hammerGroup.rotation.z = -1.1 + Math.sin(G.hammer*Math.PI)*1.8;
+    if(G.hammer <= 0) hammerGroup.visible = false;
+  }
+  const t = performance.now() * .001;
+  if(ceilingLampLight && G.scene === "gamble"){
+    const base = ceilingLampLight.userData.baseIntensity || 4.6;
+    const softPulse = 1 + Math.sin(t * 6.2) * .025;
+    const rareFlicker = settings.lampFlicker === "on" && Math.random() < .014 ? .72 + Math.random() * .22 : 1;
+    ceilingLampLight.intensity = base * softPulse * rareFlicker;
+    if(ceilingLampBulb?.material) ceilingLampBulb.material.emissiveIntensity = .95 * sceneBrightness() * rareFlicker;
+    if(ceilingLampCone?.material) ceilingLampCone.material.opacity = .055 * sceneBrightness() * rareFlicker;
+  }
+  if(playerSprite){
+    playerSprite.position.y = -.9 + Math.sin(t*2.2)*.04;
+    playerSprite.rotation.z = Math.sin(t*1.4) * .018;
+  }
+  if(rivalSprite){
+    rivalSprite.position.y = .72 + Math.cos(t*2.0)*.04;
+    rivalSprite.rotation.z = Math.cos(t*1.3) * .018;
+  }
+  gambleGroup.traverse(obj => {
+    if(obj.userData?.ambientDust){
+      obj.position.y += Math.sin(t*.8 + obj.userData.seed) * .0008;
+      obj.position.x += Math.cos(t*.55 + obj.userData.seed) * .0006;
+    }
+  });
+  if(G.scene === "fish"){
+    if(fishRod){
+      const stage = G.fish.stage;
+      const cast = stage === "casting" ? Math.sin(Math.min(1, G.fish.biteTimer || .8) * Math.PI) : 0;
+      fishRod.rotation.z = stage === "casting" ? -.34 + Math.sin(t*8)*.08 : stage === "waiting" ? Math.sin(t*3.8)*.035 : stage === "caught" ? -.42 + Math.sin(t*10)*.06 : 0;
+      fishRod.rotation.x = stage === "casting" ? -.26 : stage === "caught" ? -.18 : -.08;
+      fishRod.rotation.y = Math.PI*.72;
+      fishRod.position.y = 1.0 + Math.sin(t*2.2)*.025 + cast*.08;
+    }
+    if(fishingLine){
+      fishingLine.rotation.z = .74 + Math.sin(t*2.5)*.025;
+      fishingLine.scale.y = G.fish.stage === "caught" ? .82 + Math.sin(t*10)*.035 : 1;
+    }
+    if(G.fish.stage === "waiting"){
+      if(G.fish.biteTimer > 0) G.fish.biteTimer--;
+      else { G.fish.bobberMove = G.items.fishNet > 0 ? 95 : 74; G.fish.biteTimer = 120 + Math.floor(Math.random()*140); sfx("tick"); }
+    }
+    if(G.fish.bobberMove > 0) G.fish.bobberMove--;
+    const bite = G.fish.bobberMove > 0 ? Math.sin(t*24) * .45 : Math.sin(t*3) * .08;
+    if(bobber) bobber.position.y = .34 + bite;
+    if(G.fish.fishJump){
+      const fj = G.fish.fishJump;
+      fj.life--;
+      fj.y += fj.vy;
+      fj.vy -= .011;
+      fishJumpSprite.position.set(4.1, .9 + Math.max(0,fj.y), -1.1);
+      fishJumpSprite.rotation.set(Math.sin(t*8)*.12, t*1.7, Math.sin(t*5)*.22);
+      fishJumpSprite.scale.setScalar(1.05 * fj.fish.size);
+      if(fishJumpSprite.userData.tail) fishJumpSprite.userData.tail.rotation.y = Math.sin(t*18)*.45;
+      if(fj.life <= 0){ G.fish.fishJump = null; fishJumpSprite.visible = false; }
+    }
+  }
+  for(const c of coins){
+    c.mesh.position.add(c.v);
+    c.v.y -= .004;
+    c.mesh.rotation.y += .25;
+    c.life--;
+  }
+  coins = coins.filter(c => { if(c.life <= 0){ fxGroup.remove(c.mesh); return false; } return true; });
+  for(const d of dust){
+    d.mesh.position.add(d.v);
+    d.mesh.scale.multiplyScalar(1.016);
+    d.life--;
+    d.mesh.material.opacity = Math.max(0, d.life / 58 * .55);
+  }
+  dust = dust.filter(d => { if(d.life <= 0){ fxGroup.remove(d.mesh); return false; } return true; });
+  if(lastScene !== G.scene || lastChapter !== G.chapterIndex){
+    lastScene = G.scene; lastChapter = G.chapterIndex;
+    applySceneVisibility();
+  }
+  updateHUD();
+}
+function updateHUD(){
+  const ch = currentChapter();
+  const questStep = G.quests?.step || "journey";
+  const questLabel = {journey:"여정", gather:"정보 수집", duel:"폐쇄 결투", travel:"이동", chapter2:"다음 장"}[questStep] || questStep;
+  $("chapterLabel").textContent = storyDuelConfigs[G.currentNodeId]?.display || ch.name;
+  $("scoreLabel").textContent = `소지금 ${G.playerGold}G · 빚 문서 ${G.quests?.debtPapers || 0} · ${questLabel}`;
+  $("roundLabel").textContent = G.scene === "gamble"
+    ? `상대 ${G.rival.name} · 라운드 ${G.round} · 배팅 ${G.bet}G · 격파 목표 하트 ${G.rivalHearts ?? 3}`
+    : `오아시스 조사 · 낚시로 단서 획득 · 상태 ${G.fish.stage}`;
+  $("sceneLabel").textContent = G.scene === "gamble" ? "도박" : "낚시";
+  $("rivalLabel").textContent = G.scene === "gamble" ? G.rival.name : ch.place;
+  $("diceLabel").textContent = G.scene === "gamble" ? `주사위 ${G.playerDice.join("+")} : ${G.npcDice.join("+")}` : `낚시 상태: ${G.fish.stage}`;
+  $("message").textContent = G.msg;
+  refreshTitleQuest();
+}
+function resize(){
+  const w = $("stage").clientWidth;
+  const h = $("stage").clientHeight;
+  renderer.setSize(w,h,false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+function loop(){
+  const dt = Math.min(.033, clock.getDelta());
+  update(dt);
+  renderer.render(scene,camera);
+  requestAnimationFrame(loop);
+}
+
+$("actBtn").onclick = act;
+$("suspectBtn").onclick = suspect;
+$("cheatBtn").onclick = playerCheat;
+$("sceneBtn").onclick = toggleScene;
+$("shopBtn").onclick = () => toggleShop();
+$("bookBtn").onclick = () => toggleBook();
+$("restartBtn").onclick = () => G.gameOver ? nextRival() : newGame(true);
+$("muteBtn").onclick = () => { muted = !muted; $("muteBtn").innerHTML = `${muted ? "음소거 해제" : "음소거"}<br><span class="small">M</span>`; };
+$("betDownBtn").onclick = () => changeBet(-5);
+$("betUpBtn").onclick = () => changeBet(5);
+$("closeShop").onclick = () => toggleShop(false);
+$("closeBook").onclick = () => toggleBook(false);
+$("closeHelp").onclick = closeHelp;
+$("titleNewBtn").onclick = startNewFromTitle;
+$("titleLoadBtn").onclick = loadFromTitle;
+$("titleSettingsBtn").onclick = openSettings;
+$("settingsCloseBtn").onclick = closeSettings;
+$("cutsceneOverlay").onclick = e => {
+  if(e.target.closest("button")) return;
+  advanceCutscene();
+};
+$("epilogueContinueBtn").onclick = () => {
+  const action = epilogueNextAction;
+  epilogueNextAction = null;
+  action?.();
+};
+$("gameOverRetryBtn").onclick = () => newGame(true);
+$("gameOverMenuBtn").onclick = () => {
+  hideGameOver();
+  stopMusic();
+  document.body.classList.add("title-mode");
+  $("titleOverlay").style.display = "flex";
+  gameStarted = false;
+  updateTitleLoadState();
+};
+$("volumeRange").oninput = e => { $("volumeLabel").textContent = `${e.target.value}%`; };
+$("gambleBrightnessRange").oninput = e => { $("gambleBrightnessLabel").textContent = `${e.target.value}%`; };
+$("fishBrightnessRange").oninput = e => { $("fishBrightnessLabel").textContent = `${e.target.value}%`; };
+$("qualitySelect").onchange = e => {
+  settings.quality = e.target.value;
+  settings.pixelRatio = qualityPixelRatio(settings.quality);
+  applyRenderQuality();
+};
+$("gambleBrightnessRange").onchange = applyLiveSettings;
+$("fishBrightnessRange").onchange = applyLiveSettings;
+$("lampFlickerToggle").onchange = applyLiveSettings;
+$("music").onchange = e => startMusic(e.target.value === "none" ? "none" : currentChapter().music);
+$("difficulty").onchange = () => { if(G && G.phase === "observe") startRound(); };
+window.addEventListener("keydown", e => {
+  if(isCutsceneActive()){
+    if($("epilogueOverlay").classList.contains("visible")){
+      if(e.key === "Enter" || e.code === "Space") $("epilogueContinueBtn").click();
+      e.preventDefault();
+      return;
+    }
+    if(e.key === "Enter" || e.code === "Space"){
+      advanceCutscene();
+      e.preventDefault();
+    }
+    return;
+  }
+  if($("storyOverlay").classList.contains("visible")){
+    if(e.key === "Enter" || e.code === "Space") $("storyActions").querySelector("button")?.click();
+    e.preventDefault();
+    return;
+  }
+  if($("settingsOverlay").classList.contains("visible")){
+    if(e.key === "Escape") closeSettings();
+    return;
+  }
+  if(document.body.classList.contains("title-mode")){
+    if(e.key === "Enter") startNewFromTitle();
+    if(e.key === "ArrowDown" || e.key === "ArrowUp") e.preventDefault();
+    return;
+  }
+  const k = e.key.toLowerCase();
+  if([" ","arrowleft","arrowright","[","]"].includes(e.key.toLowerCase()) || e.code === "Space") e.preventDefault();
+  if(e.code === "Space") act();
+  else if(k === "c") suspect();
+  else if(k === "x") playerCheat();
+  else if(k === "i") toggleShop();
+  else if(k === "f") toggleBook();
+  else if(k === "r") G.gameOver ? nextRival() : newGame(true);
+  else if(k === "m") $("muteBtn").click();
+  else if(k === "[" ) changeBet(-5);
+  else if(k === "]" ) changeBet(5);
+  else if(e.key === "ArrowLeft" || e.key === "ArrowRight") toggleScene();
+});
+window.addEventListener("resize", resize);
+
+applySettingsToUi();
+newGame(false, false);
+resize();
+renderer.render(scene,camera);
+captureTitleStill();
+updateTitleLoadState();
+loop();
+</script>
+</body>
+</html>
