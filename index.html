@@ -1193,6 +1193,7 @@ function startNode(nodeId){
         resetFish();
         applySceneVisibility();
         G.msg = "오아시스 소문 노드입니다. 낚시에 성공하면 잭의 약점을 얻습니다.";
+        saveGame();
         startMusic($("music").value === "none" ? "none" : "fish");
       }},
       {label:"그냥 지나가기", onChoose:() => {
@@ -2894,7 +2895,7 @@ function applyLiveSettings(){
 function saveGame(){
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
-      version:1, chapterIndex:G.chapterIndex, rivalIndex:G.rivalIndex, playerGold:G.playerGold, bet:G.bet, items:G.items,
+      version:1, scene:G.scene, chapterIndex:G.chapterIndex, rivalIndex:G.rivalIndex, playerGold:G.playerGold, bet:G.bet, items:G.items,
       playerHearts:G.playerHearts, rivalHearts:G.rivalHearts,
       storyFlags:G.storyFlags, trust:G.trust, quests:G.quests, rivalState:G.rivalState,
       seenCutscenes:G.seenCutscenes, currentCutscene:G.currentCutscene, endingFlags:G.endingFlags,
@@ -2943,6 +2944,11 @@ function loadGame(){
     normalizeBet();
     buildScene();
     startRound();
+    // Older saves did not store the scene; recover fishing from their quest step.
+    G.scene = d.scene === "fish" || (!d.scene && G.quests.step === "fish") ? "fish" : "gamble";
+    if(G.scene === "fish") resetFish();
+    applySceneVisibility();
+    updateHUD();
     saveGame();
     return true;
   } catch { return false; }
